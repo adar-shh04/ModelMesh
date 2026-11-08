@@ -1,0 +1,90 @@
+# Model catalog. Operator-maintained; `modelmesh catalog verify` compares it with each provider's /models.
+#
+# data_use is attested for the configured provider account (DECISIONS D4). Gemini free tier, Groq and OpenRouter
+# stay may_train or unknown until reviewed. latency_prior values are rough starting points used only until
+# telemetry exists; Ollama figures are unmeasured on the target GPU. Facts checked 2026-11-08 (ADR-0003).
+version: "2026-11-08"
+models:
+  - id: gemini/gemini-3.1-flash-lite
+    provider: gemini
+    family: gemini
+    size_tier: small
+    context_window: 1048576
+    max_output_tokens: 65536
+    data_use: may_train
+    free_tier: true
+    tools: true
+    json_object: true
+    json_schema: { mode: best_effort, stream: false, with_tools: false }
+    dropped_params: [presence_penalty, frequency_penalty]
+    latency_prior: { ttft_ms: 700, tokens_per_s: 150 }
+
+  - id: gemini/gemini-3.6-flash
+    provider: gemini
+    family: gemini
+    size_tier: large
+    context_window: 1048576
+    max_output_tokens: 65536
+    data_use: may_train
+    free_tier: true
+    tools: true
+    json_object: true
+    json_schema: { mode: best_effort, stream: false, with_tools: false }
+    dropped_params: [presence_penalty, frequency_penalty]
+    latency_prior: { ttft_ms: 1200, tokens_per_s: 100 }
+
+  - id: groq/openai/gpt-oss-20b
+    provider: groq
+    family: gpt-oss
+    size_tier: medium
+    context_window: 131072
+    max_output_tokens: 65536
+    data_use: unknown
+    free_tier: true
+    tools: true
+    json_object: true
+    json_schema: { mode: strict, stream: false, with_tools: false }
+    latency_prior: { ttft_ms: 300, tokens_per_s: 500 }
+
+  - id: groq/openai/gpt-oss-120b
+    provider: groq
+    family: gpt-oss
+    size_tier: large
+    context_window: 131072
+    max_output_tokens: 65536
+    data_use: unknown
+    free_tier: true
+    tools: true
+    json_object: true
+    json_schema: { mode: strict, stream: false, with_tools: false }
+    latency_prior: { ttft_ms: 500, tokens_per_s: 300 }
+
+  - id: ollama/qwen3:4b
+    provider: ollama
+    family: qwen
+    size_tier: small
+    context_window: 8192
+    max_output_tokens: 4096
+    data_use: no_training
+    local: true
+    tools: true
+    tool_choice: false
+    json_object: true
+    json_schema: { mode: best_effort, stream: false, with_tools: false }
+    dropped_params: [presence_penalty, frequency_penalty]
+    latency_prior: { ttft_ms: 3000, tokens_per_s: 25 }
+
+  - id: ollama/llama3.2:3b
+    provider: ollama
+    family: llama
+    size_tier: small
+    context_window: 8192
+    max_output_tokens: 4096
+    data_use: no_training
+    local: true
+    tools: true
+    tool_choice: false
+    json_object: true
+    json_schema: { mode: best_effort, stream: false, with_tools: false }
+    dropped_params: [presence_penalty, frequency_penalty]
+    latency_prior: { ttft_ms: 3000, tokens_per_s: 30 }

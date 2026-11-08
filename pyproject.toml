@@ -1,0 +1,116 @@
+[project]
+name = "modelmesh"
+version = "0.1.0"
+description = "Provider-independent LLM inference gateway with explicit routing policies."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+    "fastapi>=0.162",
+    "uvicorn[standard]>=0.54",
+    "pydantic>=2.14",
+    "pydantic-settings>=2.6",
+    "httpx>=0.28",
+    "sqlalchemy[asyncio]>=2.1",
+    "psycopg[binary]>=3.3",
+    "alembic>=1.20",
+    "redis>=8.1",
+    "jsonschema>=4.23",
+    "pyyaml>=6.0",
+    "tzdata>=2025.1",
+    "python-ulid>=4.1",
+    "opentelemetry-api>=1.45",
+    "opentelemetry-sdk>=1.45",
+    "opentelemetry-exporter-otlp-proto-http>=1.45",
+    "opentelemetry-instrumentation-fastapi>=0.66b2",
+]
+
+[project.scripts]
+modelmesh = "modelmesh.cli:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17",
+    "mypy>=2.4",
+    "pytest>=9.2",
+    "respx>=0.23",
+    "import-linter>=2.1",
+    "openai>=3.46",
+    "types-pyyaml",
+    "types-jsonschema",
+]
+load = ["locust>=2.47"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/modelmesh"]
+
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+src = ["src", "tests"]
+extend-exclude = [".cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "S", "C4", "SIM", "RUF", "T20"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "T20"]
+"migrations/**" = ["E501"]
+"src/modelmesh/cli.py" = ["T20"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["src"]
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["respx.*", "opentelemetry.instrumentation.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: needs real Postgres and Redis (see scripts/test-services)",
+    "live: calls a real provider; skipped when credentials or the runtime are missing",
+]
+
+[tool.importlinter]
+root_package = "modelmesh"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture"
+type = "layers"
+layers = [
+    "modelmesh.cli",
+    "modelmesh.api",
+    "modelmesh.pipeline",
+    "modelmesh.auth | modelmesh.policy | modelmesh.routing | modelmesh.cache | modelmesh.reliability | modelmesh.accounting",
+    "modelmesh.providers",
+    "modelmesh.persistence | modelmesh.observability",
+    "modelmesh.core",
+]
+exhaustive = false
+
+[[tool.importlinter.contracts]]
+name = "Adapters only depend on core and observability"
+type = "forbidden"
+source_modules = ["modelmesh.providers"]
+forbidden_modules = ["modelmesh.persistence", "modelmesh.routing", "modelmesh.policy", "modelmesh.cache", "modelmesh.accounting", "modelmesh.pipeline", "modelmesh.api", "modelmesh.auth"]
+
+[[tool.importlinter.contracts]]
+name = "Online code never imports offline ML or heavy ML libraries"
+type = "forbidden"
+source_modules = ["modelmesh.api", "modelmesh.pipeline", "modelmesh.routing", "modelmesh.auth", "modelmesh.policy", "modelmesh.cache", "modelmesh.reliability", "modelmesh.providers", "modelmesh.accounting"]
+forbidden_modules = ["modelmesh.ml", "sklearn", "mlflow", "datasets"]

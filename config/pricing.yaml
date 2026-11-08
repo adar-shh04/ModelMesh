@@ -1,0 +1,11 @@
+# USD per million tokens. List prices, used for ESTIMATED cost even on free tiers (contract: Pricing.free_tier).
+# Sources: provider pricing pages, accessed 2026-11-08 (ADR-0003). Gemini Flash prices are promotional until
+# 2026-12-31 and need a new version after that.
+version: "2026-11-08"
+prices:
+  gemini/gemini-3.1-flash-lite: { input_per_mtok_usd: 0.25, output_per_mtok_usd: 1.50 }
+  gemini/gemini-3.6-flash: { input_per_mtok_usd: 0.75, output_per_mtok_usd: 3.75 }
+  groq/openai/gpt-oss-20b: { input_per_mtok_usd: 0.075, output_per_mtok_usd: 0.30 }
+  groq/openai/gpt-oss-120b: { input_per_mtok_usd: 0.15, output_per_mtok_usd: 0.60 }
+  ollama/qwen3:4b: { input_per_mtok_usd: 0.0, output_per_mtok_usd: 0.0 }
+  ollama/llama3.2:3b: { input_per_mtok_usd: 0.0, output_per_mtok_usd: 0.0 }
