@@ -35,9 +35,7 @@ from modelmesh.providers.fake import FakeAdapter
 REPO = Path(__file__).resolve().parents[1]
 PG_ADMIN_DSN = os.environ.get("TEST_PG_ADMIN_DSN", "postgresql://modelmesh:modelmesh@127.0.0.1:55432/modelmesh")
 TEST_DB = "modelmesh_test"
-TEST_DB_URL = os.environ.get(
-    "TEST_DATABASE_URL", f"postgresql+psycopg://modelmesh:modelmesh@127.0.0.1:55432/{TEST_DB}"
-)
+TEST_DB_URL = os.environ.get("TEST_DATABASE_URL", f"postgresql+psycopg://modelmesh:modelmesh@127.0.0.1:55432/{TEST_DB}")
 TEST_REDIS_URL = os.environ.get("TEST_REDIS_URL", "redis://127.0.0.1:56379/0")
 
 CONTRACT = yaml.safe_load((REPO / "docs/contract/openapi-v1.yaml").read_text(encoding="utf-8"))
@@ -105,9 +103,7 @@ class Api:
 
     async def chat(self, *, headers: dict[str, str] | None = None, **body: Any) -> httpx.Response:
         payload = {"model": "fake/echo-small", "messages": [{"role": "user", "content": "hello"}]} | body
-        return await self.client.post(
-            "/v1/chat/completions", json=payload, headers={**self.headers, **(headers or {})}
-        )
+        return await self.client.post("/v1/chat/completions", json=payload, headers={**self.headers, **(headers or {})})
 
     async def new_key(self, tenant_id: str | None = None, **kwargs: Any) -> str:
         created = await self.admin.create_key(tenant_id or self.tenant_id, name="extra", **kwargs)
@@ -146,7 +142,9 @@ async def build_api(migrated: str, cache: Any = None, quality: Any = None, **set
         await connection.execute(text(f"TRUNCATE {TABLES} CASCADE"))
     await services.redis.flushdb()
     app = create_app(services)
-    admin = AdminService(services.sessions, services.authenticator, SecretStr("test-pepper"), KeyDefaults(20, 50_000, 10, 0.25))
+    admin = AdminService(
+        services.sessions, services.authenticator, SecretStr("test-pepper"), KeyDefaults(20, 50_000, 10, 0.25)
+    )
     tenant = await admin.create_tenant("test")
     key = await admin.create_key(tenant["id"], name="main", env="test", limits=ROOMY_LIMITS)
     client = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://mesh.test", timeout=30)

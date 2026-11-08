@@ -71,9 +71,7 @@ def delta(content: str | None = None, finish: str | None = None) -> dict[str, An
     return {"choices": [{"index": 0, "delta": body, "finish_reason": finish}]}
 
 
-async def collect(
-    adapter: OpenAICompatAdapter, req: NormalizedChatRequest | None = None
-) -> list[NormalizedChunk]:
+async def collect(adapter: OpenAICompatAdapter, req: NormalizedChatRequest | None = None) -> list[NormalizedChunk]:
     return [chunk async for chunk in adapter.stream(req or make_request(), deadline=deadline())]
 
 
@@ -272,9 +270,7 @@ async def test_groq_rate_limit_headers_are_parsed(client) -> None:
         "x-ratelimit-reset-requests": "2m59.56s",
         "x-ratelimit-reset-tokens": "6s",
     }
-    respx.post(f"{GROQ}/chat/completions").mock(
-        return_value=httpx.Response(200, json=SUCCESS, headers=headers)
-    )
+    respx.post(f"{GROQ}/chat/completions").mock(return_value=httpx.Response(200, json=SUCCESS, headers=headers))
     result = await groq(client).chat(make_request(), deadline=deadline())
     assert result.rate_limit is not None
     assert result.rate_limit.remaining_requests == 12
@@ -302,9 +298,7 @@ async def test_groq_498_is_retryable_capacity(client) -> None:
 @respx.mock
 async def test_gemini_distinguishes_daily_quota_from_rate(client) -> None:
     route = respx.post(f"{GEMINI}/chat/completions")
-    route.mock(
-        return_value=httpx.Response(429, json={"error": {"code": "rate_limit_exceeded", "message": "x"}})
-    )
+    route.mock(return_value=httpx.Response(429, json={"error": {"code": "rate_limit_exceeded", "message": "x"}}))
     with pytest.raises(ProviderError) as excinfo:
         await gemini(client).chat(make_request(), deadline=deadline())
     assert excinfo.value.error_class == ErrorClass.RATE_LIMITED
@@ -346,9 +340,7 @@ async def test_openrouter_midstream_error_chunk_and_keepalive(client) -> None:
     body = sse(
         ": OPENROUTER PROCESSING",
         data(delta("partial")),
-        data(
-            {"error": {"code": 502, "message": "dead"}, "choices": [{"delta": {}, "finish_reason": "error"}]}
-        ),
+        data({"error": {"code": 502, "message": "dead"}, "choices": [{"delta": {}, "finish_reason": "error"}]}),
     )
     respx.post(f"{OPENROUTER}/chat/completions").mock(return_value=httpx.Response(200, text=body))
     received: list[NormalizedChunk] = []
@@ -416,9 +408,7 @@ async def test_ollama_sends_no_auth_and_drops_tool_choice(client) -> None:
 
 @respx.mock
 async def test_ollama_health_reports_loaded_models(client) -> None:
-    respx.get(f"{OLLAMA}/api/ps").mock(
-        return_value=httpx.Response(200, json={"models": [{"name": "qwen3:4b"}]})
-    )
+    respx.get(f"{OLLAMA}/api/ps").mock(return_value=httpx.Response(200, json={"models": [{"name": "qwen3:4b"}]}))
     health = await ollama(client).health()
     assert health.ok
     assert "1 model" in health.detail
@@ -445,9 +435,7 @@ async def test_tool_call_deltas_are_normalised(client) -> None:
     tool_delta = {
         "choices": [
             {
-                "delta": {
-                    "tool_calls": [{"index": 0, "id": "c1", "function": {"name": "f", "arguments": "{"}}]
-                },
+                "delta": {"tool_calls": [{"index": 0, "id": "c1", "function": {"name": "f", "arguments": "{"}}]},
                 "finish_reason": None,
             }
         ]

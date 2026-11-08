@@ -34,9 +34,9 @@ def test_model_matches_contract_properties_and_required(name: str) -> None:
     assert set(generated.get("properties", {})) == set(contract.get("properties", {}))
     # A property the contract requires must be required by the model, except where the model supplies a
     # value the contract permits the client to omit.
-    assert set(contract.get("required", [])) <= set(generated.get("required", [])) | set(
+    assert set(contract.get("required", [])) <= set(generated.get("required", [])) | {
         key for key, value in generated.get("properties", {}).items() if "default" in value
-    )
+    }
 
 
 def test_input_models_reject_unknown_fields() -> None:

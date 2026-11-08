@@ -9,14 +9,27 @@ import pytest
 from doubles import make_model
 from modelmesh.core.errors import ApiError
 from modelmesh.observability.stats import ProviderStats
-from modelmesh.policy.engine import CapabilityNeeds, Constraints, effective_data_policy, filter_candidates, plan_structured
+from modelmesh.policy.engine import (
+    CapabilityNeeds,
+    Constraints,
+    effective_data_policy,
+    filter_candidates,
+    plan_structured,
+)
 from modelmesh.providers.catalog import PricingTable
 from modelmesh.routing.estimates import CandidateEstimate, Estimator, NoCalibration, TokenEstimator
 from modelmesh.routing.solver import SolveInput, rank_by_rules, rules_tier, solve
 
 
 def estimate(
-    name: str, *, cost: float = 0.01, p50: int = 100, p90: int = 200, quality: float | None = None, fail: float = 0.0, **model: Any
+    name: str,
+    *,
+    cost: float = 0.01,
+    p50: int = 100,
+    p90: int = 200,
+    quality: float | None = None,
+    fail: float = 0.0,
+    **model: Any,
 ) -> CandidateEstimate:
     return CandidateEstimate(
         model=make_model(name, **model),
@@ -133,7 +146,9 @@ def test_latency_prior_warning_only_when_budget_is_set() -> None:
             **{**estimate("a").__dict__, "latency_prior_used": True},
         )
     ]
-    assert "latency_prior_used" in solve(inputs("latency_optimized", calibrated=False, max_latency_ms=500), prior).warnings
+    assert (
+        "latency_prior_used" in solve(inputs("latency_optimized", calibrated=False, max_latency_ms=500), prior).warnings
+    )
     assert "latency_prior_used" not in solve(inputs("latency_optimized", calibrated=False), prior).warnings
 
 

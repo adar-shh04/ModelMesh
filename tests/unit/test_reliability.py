@@ -123,7 +123,10 @@ PORTABLE = {
     "type": "object",
     "additionalProperties": False,
     "required": ["a", "b"],
-    "properties": {"a": {"type": ["string", "null"]}, "b": {"type": "array", "items": {"type": "integer"}, "maxItems": 3}},
+    "properties": {
+        "a": {"type": ["string", "null"]},
+        "b": {"type": "array", "items": {"type": "integer"}, "maxItems": 3},
+    },
 }
 
 
