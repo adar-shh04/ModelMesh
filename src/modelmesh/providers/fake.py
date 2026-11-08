@@ -89,9 +89,7 @@ class FakeAdapter:
             content=answer, tool_calls=None, finish_reason="stop", usage=self._usage(req, answer)
         )
 
-    async def stream(
-        self, req: NormalizedChatRequest, *, deadline: Deadline
-    ) -> AsyncIterator[NormalizedChunk]:
+    async def stream(self, req: NormalizedChatRequest, *, deadline: Deadline) -> AsyncIterator[NormalizedChunk]:
         self._maybe_fail(req)
         answer = self._answer(req)
         words = answer.split(" ")

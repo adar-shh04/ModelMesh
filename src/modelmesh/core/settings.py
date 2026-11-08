@@ -28,9 +28,9 @@ class Settings(BaseSettings):
     admin_token: SecretStr = Field(SecretStr(""), alias="MODELMESH_ADMIN_TOKEN")
 
     database_url: str = Field(
-        "postgresql+psycopg://modelmesh:modelmesh@localhost:55432/modelmesh", alias="MODELMESH_DATABASE_URL"
+        "postgresql+psycopg://modelmesh:modelmesh@127.0.0.1:55432/modelmesh", alias="MODELMESH_DATABASE_URL"
     )
-    redis_url: str = Field("redis://localhost:56379/0", alias="MODELMESH_REDIS_URL")
+    redis_url: str = Field("redis://127.0.0.1:56379/0", alias="MODELMESH_REDIS_URL")
 
     gemini_api_key: SecretStr | None = Field(None, alias="GEMINI_API_KEY")
     groq_api_key: SecretStr | None = Field(None, alias="GROQ_API_KEY")

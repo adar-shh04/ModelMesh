@@ -51,12 +51,7 @@ class OpenRouterAdapter(OpenAICompatAdapter):
         payload.pop("stream_options", None)
         routing: dict[str, Any] = {}
         # Without this, OpenRouter may silently ignore parameters an upstream does not support.
-        if (
-            req.response_format is not None
-            or req.tools is not None
-            or req.tool_choice is not None
-            or req.stop
-        ):
+        if req.response_format is not None or req.tools is not None or req.tool_choice is not None or req.stop:
             routing["require_parameters"] = True
         if req.require_no_training:
             routing["data_collection"] = "deny"

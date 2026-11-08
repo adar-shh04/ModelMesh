@@ -1,0 +1,83 @@
+# ModelMesh local stack (ADR-0011). Docker's VM on the dev machine is capped at 4 GB, so limits are tight.
+# Postgres and Redis are not published unless the expose-db profile's env vars are used; see .env.example.
+name: modelmesh
+
+x-app: &app
+  build: .
+  image: modelmesh-api:local
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    MODELMESH_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-modelmesh}:${POSTGRES_PASSWORD:-modelmesh}@postgres:5432/${POSTGRES_DB:-modelmesh}
+    MODELMESH_REDIS_URL: redis://redis:6379/0
+    OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-modelmesh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-modelmesh}
+      POSTGRES_DB: ${POSTGRES_DB:-modelmesh}
+    ports:
+      - "127.0.0.1:${MODELMESH_PG_HOST_PORT:-55432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    mem_limit: 384m
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    ports:
+      - "127.0.0.1:${MODELMESH_REDIS_HOST_PORT:-56379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    mem_limit: 320m
+
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    mem_limit: 256m
+
+  api:
+    <<: *app
+    command: ["uvicorn", "modelmesh.api.app:app_factory", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "${MODELMESH_API_HOST_PORT:-8100}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/v1/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    mem_limit: 768m
+
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0
+    profiles: ["obs"]
+    ports:
+      - "${MODELMESH_JAEGER_UI_HOST_PORT:-16686}:16686"
+    mem_limit: 256m
+
+volumes:
+  pgdata:

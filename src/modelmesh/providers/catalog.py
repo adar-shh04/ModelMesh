@@ -38,6 +38,10 @@ class CatalogModel:
     dropped_params: tuple[str, ...] = ()
     latency_ttft_ms: int = 800
     latency_tokens_per_s: float = 50.0
+    limit_rpm: int = 0
+    limit_rpd: int = 0
+    limit_tpm: int = 0
+    limit_tpd: int = 0
 
     def capability_tokens(self) -> list[str]:
         tokens = []
@@ -71,9 +75,7 @@ class PricingTable:
 
     def cost(self, model_id: str, prompt_tokens: int, completion_tokens: int) -> float:
         price = self.get(model_id)
-        return (
-            prompt_tokens * price.input_per_mtok_usd + completion_tokens * price.output_per_mtok_usd
-        ) / 1_000_000
+        return (prompt_tokens * price.input_per_mtok_usd + completion_tokens * price.output_per_mtok_usd) / 1_000_000
 
 
 @dataclass
@@ -88,6 +90,7 @@ class Catalog:
 def _model_from_entry(entry: dict[str, Any]) -> CatalogModel:
     schema = entry.get("json_schema") or {}
     latency = entry.get("latency_prior") or {}
+    limits = entry.get("limits") or {}
     return CatalogModel(
         id=entry["id"],
         provider=entry["provider"],
@@ -109,6 +112,10 @@ def _model_from_entry(entry: dict[str, Any]) -> CatalogModel:
         dropped_params=tuple(entry.get("dropped_params", ())),
         latency_ttft_ms=int(latency.get("ttft_ms", 800)),
         latency_tokens_per_s=float(latency.get("tokens_per_s", 50.0)),
+        limit_rpm=int(limits.get("rpm", 0)),
+        limit_rpd=int(limits.get("rpd", 0)),
+        limit_tpm=int(limits.get("tpm", 0)),
+        limit_tpd=int(limits.get("tpd", 0)),
     )
 
 

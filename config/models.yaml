@@ -45,6 +45,7 @@ models:
     json_object: true
     json_schema: { mode: strict, stream: false, with_tools: false }
     latency_prior: { ttft_ms: 300, tokens_per_s: 500 }
+    limits: { rpm: 30, rpd: 1000, tpm: 8000, tpd: 200000 }  # Developer-plan figures; free-plan limits unverified
 
   - id: groq/openai/gpt-oss-120b
     provider: groq
@@ -58,6 +59,7 @@ models:
     json_object: true
     json_schema: { mode: strict, stream: false, with_tools: false }
     latency_prior: { ttft_ms: 500, tokens_per_s: 300 }
+    limits: { rpm: 30, rpd: 1000, tpm: 8000, tpd: 200000 }  # Developer-plan figures; free-plan limits unverified
 
   - id: ollama/qwen3:4b
     provider: ollama
@@ -71,7 +73,7 @@ models:
     tool_choice: false
     json_object: true
     json_schema: { mode: best_effort, stream: false, with_tools: false }
-    dropped_params: [presence_penalty, frequency_penalty]
+    dropped_params: [presence_penalty, frequency_penalty, reasoning_effort]
     latency_prior: { ttft_ms: 3000, tokens_per_s: 25 }
 
   - id: ollama/llama3.2:3b
@@ -86,5 +88,5 @@ models:
     tool_choice: false
     json_object: true
     json_schema: { mode: best_effort, stream: false, with_tools: false }
-    dropped_params: [presence_penalty, frequency_penalty]
+    dropped_params: [presence_penalty, frequency_penalty, reasoning_effort]
     latency_prior: { ttft_ms: 3000, tokens_per_s: 30 }

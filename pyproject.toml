@@ -52,7 +52,7 @@ packages = ["src/modelmesh"]
 default-groups = ["dev"]
 
 [tool.ruff]
-line-length = 110
+line-length = 120
 target-version = "py313"
 src = ["src", "tests"]
 extend-exclude = [".cache"]
@@ -96,9 +96,10 @@ layers = [
     "modelmesh.cli",
     "modelmesh.api",
     "modelmesh.pipeline",
-    "modelmesh.auth | modelmesh.policy | modelmesh.routing | modelmesh.cache | modelmesh.reliability | modelmesh.accounting",
+    "modelmesh.policy",
+    "modelmesh.auth | modelmesh.routing | modelmesh.cache | modelmesh.reliability | modelmesh.accounting",
     "modelmesh.providers",
-    "modelmesh.persistence | modelmesh.observability",
+    "modelmesh.persistence | modelmesh.observability | modelmesh.contract",
     "modelmesh.core",
 ]
 exhaustive = false

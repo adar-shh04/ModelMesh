@@ -33,18 +33,14 @@ class Tenant(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
     settings: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
 class ApiKey(Base):
     __tablename__ = "api_keys"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    tenant_id: Mapped[str] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
     hmac: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     prefix: Mapped[str] = mapped_column(String(32), nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -53,9 +49,7 @@ class ApiKey(Base):
     data_policy_ceiling: Mapped[str] = mapped_column(String(32), nullable=False, default="any")
     content_retention: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
@@ -138,17 +132,11 @@ class RequestContent(Base):
 
 class Feedback(Base):
     __tablename__ = "feedback"
-    __table_args__ = (
-        UniqueConstraint("request_id", "metric", "metric_version", "evaluator", name="uq_feedback_key"),
-    )
+    __table_args__ = (UniqueConstraint("request_id", "metric", "metric_version", "evaluator", name="uq_feedback_key"),)
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True)
-    request_id: Mapped[str] = mapped_column(
-        ForeignKey("requests.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    tenant_id: Mapped[str] = mapped_column(
-        ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    request_id: Mapped[str] = mapped_column(ForeignKey("requests.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
     label_source: Mapped[str] = mapped_column(String(32), nullable=False)
     metric: Mapped[str] = mapped_column(String(64), nullable=False)
     metric_version: Mapped[str] = mapped_column(String(64), nullable=False, default="")
@@ -163,9 +151,7 @@ class Feedback(Base):
     task_type: Mapped[str | None] = mapped_column(String(64))
     notes: Mapped[str | None] = mapped_column(Text)
     training_eligible: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
 class ProviderSetting(Base):
@@ -175,6 +161,4 @@ class ProviderSetting(Base):
 
     provider: Mapped[str] = mapped_column(String(32), primary_key=True)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

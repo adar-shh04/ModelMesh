@@ -39,6 +39,13 @@ class GroqAdapter(OpenAICompatAdapter):
         # Groq rejects messages[].name with HTTP 400.
         return [{k: v for k, v in message.items() if k != "name"} for message in req.messages]
 
+    def build_payload(self, req: NormalizedChatRequest, *, stream: bool) -> dict[str, Any]:
+        payload = super().build_payload(req, stream=stream)
+        # Groq accepts only low, medium and high, and rejects anything else with HTTP 400.
+        if payload.get("reasoning_effort") in ("none", "minimal"):
+            payload["reasoning_effort"] = "low"
+        return payload
+
     def extract_usage(self, obj: Mapping[str, Any]) -> TokenUsage | None:
         usage = super().extract_usage(obj)
         if usage is not None:

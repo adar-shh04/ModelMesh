@@ -81,9 +81,7 @@ class ToolMessage(_Input):
     tool_call_id: Annotated[str, Field(max_length=128)]
 
 
-ChatMessage = Annotated[
-    SystemMessage | UserMessage | AssistantMessageInput | ToolMessage, Field(discriminator="role")
-]
+ChatMessage = Annotated[SystemMessage | UserMessage | AssistantMessageInput | ToolMessage, Field(discriminator="role")]
 
 
 # ---------------------------------------------------------------- request options
@@ -173,13 +171,9 @@ class RequestMetadata(BaseModel):
 
 Capability = Annotated[
     str,
-    Field(
-        pattern=r"^(json_object|json_schema|json_schema_strict|tools|streaming|long_context:[1-9][0-9]{0,8})$"
-    ),
+    Field(pattern=r"^(json_object|json_schema|json_schema_strict|tools|streaming|long_context:[1-9][0-9]{0,8})$"),
 ]
-PolicyName = Literal[
-    "cost_optimized", "latency_optimized", "quality_balanced", "quality_max", "reliability_first"
-]
+PolicyName = Literal["cost_optimized", "latency_optimized", "quality_balanced", "quality_max", "reliability_first"]
 DataPolicy = Literal["any", "no_training_providers", "local_only"]
 
 

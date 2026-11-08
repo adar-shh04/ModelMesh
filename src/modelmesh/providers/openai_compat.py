@@ -189,9 +189,7 @@ class OpenAICompatAdapter:
         prompt_details = usage.get("prompt_tokens_details")
         completion_details = usage.get("completion_tokens_details")
         cached = prompt_details.get("cached_tokens") if isinstance(prompt_details, Mapping) else None
-        reasoning = (
-            completion_details.get("reasoning_tokens") if isinstance(completion_details, Mapping) else None
-        )
+        reasoning = completion_details.get("reasoning_tokens") if isinstance(completion_details, Mapping) else None
         return TokenUsage(
             prompt_tokens=prompt,
             completion_tokens=completion,
@@ -231,9 +229,7 @@ class OpenAICompatAdapter:
         except httpx.HTTPError as exc:
             raise self._transport_error(exc) from None
         if response.status_code >= 400:
-            raise self.classify_status(
-                response.status_code, await self._decode_error_body(response), response.headers
-            )
+            raise self.classify_status(response.status_code, await self._decode_error_body(response), response.headers)
         try:
             body = response.json()
         except ValueError:
@@ -278,9 +274,7 @@ class OpenAICompatAdapter:
             rate_limit=self.parse_rate_limit(response.headers),
         )
 
-    async def stream(
-        self, req: NormalizedChatRequest, *, deadline: Deadline
-    ) -> AsyncIterator[NormalizedChunk]:
+    async def stream(self, req: NormalizedChatRequest, *, deadline: Deadline) -> AsyncIterator[NormalizedChunk]:
         # No read timeout here: the executor bounds time-to-first-token by the deadline and later gaps by the
         # idle timeout, which a single static httpx timeout cannot express.
         timeout = httpx.Timeout(None, connect=min(5.0, deadline.remaining_s()))
@@ -326,9 +320,7 @@ class OpenAICompatAdapter:
             raise self._transport_error(exc) from None
 
     def _parse_chunk(self, obj: Mapping[str, Any]) -> NormalizedChunk:
-        chunk = NormalizedChunk(
-            usage=self.extract_usage(obj), provider_reported_cost_usd=self.extract_cost(obj)
-        )
+        chunk = NormalizedChunk(usage=self.extract_usage(obj), provider_reported_cost_usd=self.extract_cost(obj))
         choices = obj.get("choices")
         if not isinstance(choices, list) or not choices or not isinstance(choices[0], Mapping):
             return chunk
@@ -366,9 +358,7 @@ class OpenAICompatAdapter:
         except httpx.HTTPError as exc:
             raise self._transport_error(exc) from None
         if response.status_code >= 400:
-            raise self.classify_status(
-                response.status_code, await self._decode_error_body(response), response.headers
-            )
+            raise self.classify_status(response.status_code, await self._decode_error_body(response), response.headers)
         return self._parse_models(response.json())
 
     def _parse_models(self, body: Any) -> list[ProviderModelInfo]:
