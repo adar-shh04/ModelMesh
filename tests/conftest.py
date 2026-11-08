@@ -81,6 +81,7 @@ def make_settings(**overrides: Any) -> Settings:
         "MODELMESH_ENABLE_FAKE_PROVIDER": True,
         "MODELMESH_MODEL_CATALOG_PATH": REPO / "config/models.yaml",
         "MODELMESH_PRICING_PATH": REPO / "config/pricing.yaml",
+        "MODELMESH_CACHE_THRESHOLDS_PATH": REPO / "config/cache_thresholds.yaml",
     } | overrides
     return Settings(_env_file=None, **values)
 
@@ -141,6 +142,7 @@ async def build_api(migrated: str, cache: Any = None, quality: Any = None, **set
     async with services.engine.begin() as connection:
         await connection.execute(text(f"TRUNCATE {TABLES} CASCADE"))
     await services.redis.flushdb()
+    await services.cache.prepare()
     app = create_app(services)
     admin = AdminService(
         services.sessions, services.authenticator, SecretStr("test-pepper"), KeyDefaults(20, 50_000, 10, 0.25)

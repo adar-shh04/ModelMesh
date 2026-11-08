@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import yaml
 from redis.asyncio import Redis
 
 from modelmesh.accounting.records import RecordStore
 from modelmesh.auth.keys import KeyAuthenticator
 from modelmesh.auth.limits import BudgetTracker, RateLimiter
-from modelmesh.cache.base import NullCache, ResponseCache
+from modelmesh.cache.base import ResponseCache
+from modelmesh.cache.embeddings import FastEmbedEmbedder
+from modelmesh.cache.redis_cache import RedisResponseCache
 from modelmesh.core.settings import Settings
 from modelmesh.observability.stats import ProviderStats
 from modelmesh.observability.telemetry import Telemetry, build_telemetry
@@ -20,6 +23,18 @@ from modelmesh.reliability.breaker import BreakerRegistry
 from modelmesh.reliability.executor import Executor
 from modelmesh.reliability.quota import QuotaTracker
 from modelmesh.routing.estimates import Estimator, NoCalibration, QualityPredictor, TokenEstimator
+
+
+def build_cache(settings: Settings, redis: Redis) -> ResponseCache:
+    embedder = (
+        FastEmbedEmbedder(settings.embedding_model, cache_dir=settings.fastembed_cache_path)
+        if settings.semantic_cache_enabled
+        else None
+    )
+    raw = yaml.safe_load(settings.cache_thresholds_path.read_text(encoding="utf-8"))
+    return RedisResponseCache(
+        redis, embedder, thresholds=raw.get("task_types") or {}, default_threshold=float(raw["default"])
+    )
 
 
 def build_services(
@@ -65,6 +80,6 @@ def build_services(
         limiter=RateLimiter(redis),
         budgets=BudgetTracker(redis, records.spend_since),
         records=records,
-        cache=cache or NullCache(),
+        cache=cache or build_cache(settings, redis),
         telemetry=built_telemetry,
     )

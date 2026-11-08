@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -22,6 +23,7 @@ from modelmesh.pipeline.bootstrap import build_services
 from modelmesh.pipeline.services import Services
 
 CONTRACT_PATH = Path("docs/contract/openapi-v1.yaml")
+logger = logging.getLogger("modelmesh.api")
 
 
 def create_app(services: Services | None = None, settings: Settings | None = None) -> FastAPI:
@@ -40,6 +42,10 @@ def create_app(services: Services | None = None, settings: Settings | None = Non
             svc.registry.disabled = await admin.disabled_providers()
         except Exception:  # The database may still be starting; /v1/health reports it.
             svc.registry.disabled = set()
+        try:
+            await svc.cache.prepare()
+        except Exception:  # Redis may still be starting; exact and semantic lookups degrade safely.
+            logger.warning("cache preparation failed")
         yield
         await svc.aclose()
 

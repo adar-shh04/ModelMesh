@@ -7,5 +7,7 @@ prices:
   gemini/gemini-3.6-flash: { input_per_mtok_usd: 0.75, output_per_mtok_usd: 3.75 }
   groq/openai/gpt-oss-20b: { input_per_mtok_usd: 0.075, output_per_mtok_usd: 0.30 }
   groq/openai/gpt-oss-120b: { input_per_mtok_usd: 0.15, output_per_mtok_usd: 0.60 }
+  openrouter/nvidia/nemotron-3.5-super-vl:free: { input_per_mtok_usd: 0.0, output_per_mtok_usd: 0.0 }
+  openrouter/liquid/lfm-3-1.7b:free: { input_per_mtok_usd: 0.0, output_per_mtok_usd: 0.0 }
   ollama/qwen3:4b: { input_per_mtok_usd: 0.0, output_per_mtok_usd: 0.0 }
   ollama/llama3.2:3b: { input_per_mtok_usd: 0.0, output_per_mtok_usd: 0.0 }

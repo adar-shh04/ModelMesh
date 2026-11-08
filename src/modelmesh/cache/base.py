@@ -29,6 +29,8 @@ class CachedEntry:
 
 
 class ResponseCache(Protocol):
+    async def prepare(self) -> None: ...
+
     async def lookup(self, request: CacheRequest, *, eligible_model_ids: set[str]) -> CachedEntry | None: ...
 
     async def store(self, request: CacheRequest, payload: dict[str, Any]) -> None: ...
@@ -38,6 +40,9 @@ class ResponseCache(Protocol):
 
 class NullCache:
     """Used when caching is disabled for a deployment."""
+
+    async def prepare(self) -> None:
+        return None
 
     async def lookup(self, request: CacheRequest, *, eligible_model_ids: set[str]) -> CachedEntry | None:
         return None

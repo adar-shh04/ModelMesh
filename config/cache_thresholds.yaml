@@ -1,0 +1,4 @@
+# Cosine-similarity thresholds for semantic cache hits (ADR-0006). 1.0 disables semantic caching for a task type.
+# Produced by `python -m modelmesh.ml.cache_calibration`; see docs/milestones/M4.md for the evidence and its limits.
+default: 0.97
+task_types: {}

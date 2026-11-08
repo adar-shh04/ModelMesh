@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     cache_default_ttl_s: int = Field(3600, alias="MODELMESH_CACHE_DEFAULT_TTL_S")
     cache_max_ttl_s: int = Field(86_400, alias="MODELMESH_CACHE_MAX_TTL_S")
     semantic_cache_enabled: bool = Field(True, alias="MODELMESH_SEMANTIC_CACHE_ENABLED")
+    cache_thresholds_path: Path = Field(Path("config/cache_thresholds.yaml"), alias="MODELMESH_CACHE_THRESHOLDS_PATH")
+    fastembed_cache_path: str | None = Field(None, alias="FASTEMBED_CACHE_PATH")
     content_retention_ttl_days: int = Field(7, alias="MODELMESH_CONTENT_RETENTION_TTL_DAYS")
     enable_fake_provider: bool = Field(False, alias="MODELMESH_ENABLE_FAKE_PROVIDER")
 

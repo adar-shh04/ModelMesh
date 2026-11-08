@@ -134,6 +134,7 @@ def fake_models() -> dict[str, CatalogModel]:
             data_use="no_training",
             local=True,
             tools=True,
+            tool_choice=True,
             json_object=True,
             schema_mode="strict",
             schema_stream=True,

@@ -61,6 +61,36 @@ models:
     latency_prior: { ttft_ms: 500, tokens_per_s: 300 }
     limits: { rpm: 30, rpd: 1000, tpm: 8000, tpd: 200000 }  # Developer-plan figures; free-plan limits unverified
 
+  # OpenRouter free models, chosen 2026-11-09 from /api/v1/models for structured-output support and families other
+  # than Gemini and gpt-oss (so they can be judged independently). limits are per account across free models.
+  - id: openrouter/nvidia/nemotron-3.5-super-vl:free
+    provider: openrouter
+    family: nemotron
+    size_tier: large
+    context_window: 1000000
+    max_output_tokens: 131072
+    data_use: unknown
+    free_tier: true
+    tools: true
+    json_object: true
+    json_schema: { mode: best_effort, stream: false, with_tools: false }
+    latency_prior: { ttft_ms: 1500, tokens_per_s: 60 }
+    limits: { rpm: 20, rpd: 50 }
+
+  - id: openrouter/liquid/lfm-3-1.7b:free
+    provider: openrouter
+    family: lfm
+    size_tier: small
+    context_window: 262144
+    max_output_tokens: 8192
+    data_use: unknown
+    free_tier: true
+    tools: true
+    json_object: true
+    json_schema: { mode: best_effort, stream: false, with_tools: false }
+    latency_prior: { ttft_ms: 1000, tokens_per_s: 80 }
+    limits: { rpm: 20, rpd: 50 }
+
   - id: ollama/qwen3:4b
     provider: ollama
     family: qwen
