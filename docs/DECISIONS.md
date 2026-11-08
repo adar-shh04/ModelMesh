@@ -33,3 +33,7 @@ Where an ADR conflicts with this file, update the ADR. Do not reinterpret the de
 
 **D5 and D6 — Licence**
 - Add an MIT `LICENSE`. Check that every dependency's licence is compatible.
+
+## Coordinator interpretation (not yet reviewed by the product owner)
+
+**Redis and D5.** D5 covers AGPL code combined into or shipped with ModelMesh. Redis runs as a separate, unmodified server reached over the network, and the product spec names it explicitly, so D5 does not exclude it. Use Redis under RSALv2 and verify its current licence terms in ADR-0006 at M4. Self-hosters must be told its licence in the README. If the product owner disagrees, ADR-0006 changes.
