@@ -15,7 +15,7 @@ Constraints on this machine: the 4 GB Docker VM cap. Self-hosted Langfuse (v3 an
 | Concern | Options | Choice |
 |---|---|---|
 | Instrumentation | OTel SDK; vendor SDKs; Langfuse SDK | **OTel SDK** (spec standard) with OTLP/HTTP export |
-| Trace backend (local) | Jaeger v2 (`jaegertracing/jaeger:2.x`; the old `all-in-one` v1 is EOL); `grafana/otel-lgtm` (traces, metrics, logs, Grafana); collector + Tempo | **Jaeger v2** by default, because it is light. **`grafana/otel-lgtm` as an optional profile** for metrics dashboards. Its memory use is unmeasured, so check under the 4 GB cap |
+| Trace backend (local) | Jaeger v2 (`jaegertracing/jaeger:2.x`; the old `all-in-one` v1 is EOL); `grafana/otel-lgtm` (traces, metrics, logs, Grafana); collector + Tempo | **Jaeger v2**, because it is light. `grafana/otel-lgtm` was rejected: Grafana, Loki, Tempo and Mimir are AGPL, which DECISIONS D5 excludes |
 | Langfuse in ModelMesh | adopt; skip; optional OTLP export | **Not adopted in v1.** It overlaps with OTel for an infrastructure product and can't be self-hosted here. ModelMesh emits OTel GenAI semantic-convention attributes, which Langfuse can ingest over OTLP if an operator points an exporter at it. That is a config change, not a dependency |
 | Correlation key | trace id only; request ids only; both | **Both, plus an application-level correlation id** |
 
@@ -35,7 +35,7 @@ Constraints on this machine: the 4 GB Docker VM cap. Self-hosted Langfuse (v3 an
 
 ### Metrics
 
-OTel metrics, exported through OTLP to the optional LGTM profile:
+OTel metrics, exported through OTLP to any operator-configured backend (none is bundled; the usage dashboard reads Postgres):
 
 - `mm.requests` (counter, by status, provider, model, task_type, cache status)
 - `mm.request.duration`, `mm.attempt.duration`, `mm.ttft` (histograms)

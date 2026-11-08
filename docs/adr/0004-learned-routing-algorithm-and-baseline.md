@@ -77,7 +77,7 @@ These are computed in `ml.features` and shared by online and offline code.
 
 This is explicit, with no hidden weighted score. It applies to the eligible set after the hard filters in ADR-0007, ADR-0008 and ADR-0010.
 
-- `cost_optimized`: min Ĉ s.t. Q̂ ≥ Q_min (default per-policy `Q_min = 0.6` if the caller gave none; the value used is reported), L̂_p90 ≤ L_max. Tie-break Q̂, then L̂.
+- `cost_optimized`: min Ĉ s.t. Q̂ ≥ Q_min, L̂_p90 ≤ L_max. Tie-break Q̂, then L̂. If the caller gave no `min_quality`, a default floor of 0.6 applies on calibrated task types only (see the 1.0 amendment).
 - `latency_optimized`: min L̂_p50 s.t. Q̂ ≥ Q_min, Ĉ ≤ max_cost.
 - `quality_balanced` (**changed from the draft's "max Q − λ·cost"**): **the cheapest model whose Q̂ is within δ = 0.05 of the best eligible Q̂**. This removes the undefined λ and its unit problem (quality per USD, when costs are about 1e-4 USD). δ is documented per policy and reported in `routing.reason`.
 - `quality_max`: max Q̂. Tie-break Ĉ.
@@ -147,3 +147,14 @@ All are built by a versioned dataset-build script with a committed manifest (ite
 - In B0a, `evidence_assessment` maps to the small tier with native json_schema preferred, and `evaluation_judge` maps to the large tier. Judge calls are expected to name an explicit model.
 - Requests with `evaluation_judge` are excluded from the router training set (ADR-0005 amendment).
 - The calibration evidence described above is published per task_type at `GET /v1/routing/calibration`. A task type stays `calibrated: false` until a promoted router has at least 30 calibration points for it and ECE ≤ 0.05.
+
+## Amendment 2026-11-08 (contract 1.0, CQ-1)
+
+The default `Q_min = 0.6` for `cost_optimized` combined with "uncalibrated models are ineligible" would have made every such request return 422 until M6. Corrected rules (contract §2.1.1):
+
+- An explicit `min_quality` is a hard constraint under every policy.
+- The default floor is a policy default, not a hard constraint. It applies only to calibrated task types. If no eligible model meets it, it is dropped with a warning. A request that did not send `min_quality` never gets a 422 because of quality or missing calibration.
+- On an uncalibrated task type, `cost_optimized` picks the minimum estimated cost with no floor. `quality_balanced` and `quality_max` have no Q̂ to compare, so they use B0a: `quality_balanced` takes the task_type's tier and `quality_max` the largest eligible tier, cheapest within it. `latency_optimized` and `reliability_first` don't use Q̂ and are unchanged.
+- **B0a tier selection:** if the chosen tier has no eligible model, the nearest eligible tier is used (larger first). This matters for `local_only`, where only small models exist.
+- In a calibrated task type, a model with no calibrated evidence is left out of the quality comparison and ranked after the models that have evidence.
+- **Latency cold start:** the catalog holds a per-model latency prior, used until telemetry exists, so `max_latency_ms` can be evaluated on a fresh deployment.

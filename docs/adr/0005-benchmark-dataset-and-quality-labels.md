@@ -73,7 +73,7 @@ The protocol:
    - Report Cohen's κ (judge vs human, on accepted/rejected) per task_type.
    - Re-label 30 items after at least 7 days to measure intra-rater consistency.
    - **If κ < 0.6 for a task type, its judge labels are marked low-trust and excluded from headline claims** until the rubric or judge is revised and re-run.
-   - Estimated reviewer time is about 4–5 hours. The **product owner must nominate the reviewer.**
+   - Estimated reviewer time is about 4–5 hours. The reviewer is the product owner, working from LLM pre-labels (DECISIONS D3; see the amendment below).
    - Optional: MT-Bench human judgments (CC BY 4.0) as an external judge-agreement check.
 
 ### Collection mechanics
@@ -144,3 +144,9 @@ Stored as **candidate** labels with `label_source`:
   - Its latency and reliability telemetry is still used.
   - With `min_quality` set, a judge request always returns 422.
 - **Feedback-derived labels** enter dataset builds only when `training_eligible` is true. That requires all three: `attribution = direct`, `label_source ≠ user_signal`, and task type ≠ `evaluation_judge`.
+
+## Amendment 2026-11-08 (docs/DECISIONS.md D2, D3, D9)
+
+- **D3, labelling.** An LLM pre-labels and the product owner confirms or corrects. This supersedes fully blind labelling, because a visible pre-label can anchor the reviewer. To measure that, the pre-label is hidden on a random subset; agreement with and without the pre-label is reported and the limitation documented. Pre-labels come from a model outside the labelled model's family. The Cohen's kappa gate of 0.6 still applies.
+- **D2, OpenRouter credit.** Deferred. **M5 stops after the P0 pilot** and reports the yield at free limits and what the credit would change. P1 does not start for OpenRouter until the product owner decides. The credit is never assumed and never purchased by an agent.
+- **D9, downloads.** Benchmark dataset downloads are approved, cached on X:.

@@ -35,6 +35,8 @@ ModelMesh needs durable records of tenants, keys, requests, attempts, usage, fee
 
 ### Rate limits and quotas
 
+**Defaults for newly created keys (DECISIONS D1): 20 RPM, 50K TPM, $0.25/day estimated cost.** Keys can have explicit overrides. The benchmark harness, load tests and integration tests use explicitly configured keys, and those overrides are recorded with each run.
+
 - **RPM:** GCRA in Redis, keyed by key id.
 - **TPM:** the estimated tokens (input + `max_tokens`) are reserved before the call and reconciled with actual usage afterwards.
 - **Concurrency:** a Redis counter with TTL safety.

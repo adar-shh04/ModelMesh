@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
   title: ModelMesh Inference API
-  version: 1.0.0-rc2
+  version: 1.0.0
   summary: OpenAI-compatible, provider-independent LLM inference gateway with explicit routing policies.
   description: |
-    Machine-readable form of `docs/contract/inference-api-v1.md` (1.0-rc2). Owner: ModelMesh.
+    Machine-readable form of `docs/contract/inference-api-v1.md` (1.0, frozen). Owner: ModelMesh.
     Change-request dispositions: `docs/contract/CR_RESOLUTIONS.md`.
 
     **Compatibility.** A stock OpenAI SDK pointed at `base_url=<host>/v1` works with `model` set to a
@@ -636,7 +636,7 @@ paths:
                 $ref: '#/components/schemas/ContractInfo'
               example:
                 contract_version: '1.0'
-                contract_release: 1.0.0-rc2
+                contract_release: 1.0.0
                 endpoints: ['POST /v1/chat/completions', 'GET /v1/models', 'GET /v1/health', 'GET /v1/contract']
                 extensions: [routing.policy, routing.max_cost_usd, routing.max_latency_ms, routing.timeout_ms, routing.min_quality, routing.allowed_providers, routing.denied_providers, routing.allowed_models, routing.required_capabilities, routing.data_policy, routing.fallback, cache.mode, cache.ttl_s, cache.context_fingerprint, cache.namespace]
                 task_types: [query_classification, query_rewriting, research_planning, evidence_assessment, evidence_synthesis, citation_verification, final_response, evaluation_judge, general]
@@ -1172,11 +1172,14 @@ components:
           default: quality_balanced
           description: |
             Objective for `model: "auto"`; ignored for explicit models (see ADR-0004):
-            - cost_optimized: minimum estimated cost with predicted_quality >= min_quality (policy default 0.6 if unset) and predicted p90 latency <= max_latency_ms.
+            - cost_optimized: minimum estimated cost with predicted_quality >= min_quality and predicted p90 latency <= max_latency_ms. If min_quality is unset, a default floor of 0.6 applies on calibrated task types only, and it never causes a 422.
             - latency_optimized: minimum predicted p50 latency subject to min_quality and max_cost_usd.
             - quality_balanced: the cheapest model whose predicted quality is within delta (default 0.05) of the best eligible prediction.
             - quality_max: maximum predicted quality.
             - reliability_first: minimum predicted failure probability, tie-broken by cost.
+            When the task_type is not calibrated, cost_optimized applies no floor, and quality_balanced and quality_max
+            use the rules policy (size tier, cheapest within it, nearest eligible tier if empty). `routing.mode` is then
+            `rules_fallback` and `routing.warnings` says so. See contract section 2.1.1.
         max_cost_usd:
           type: number
           minimum: 0
@@ -1184,7 +1187,7 @@ components:
         max_latency_ms:
           type: integer
           minimum: 1
-          description: Routing budget. Only models whose PREDICTED p90 end-to-end latency is within it are eligible.
+          description: Routing budget. Only models whose PREDICTED p90 end-to-end latency is within it are eligible. Before telemetry exists the prediction uses a per-model catalog prior (warning `latency_prior_used`).
         timeout_ms:
           type: integer
           minimum: 1
@@ -1194,7 +1197,7 @@ components:
           type: number
           minimum: 0
           maximum: 1
-          description: Minimum calibrated probability that the response passes the task_type's acceptance criterion (ADR-0004/0005). Models without calibrated evidence for the task are ineligible when this is set.
+          description: Minimum calibrated probability that the response passes the task_type's acceptance criterion (ADR-0004/0005). A hard constraint when sent. Models without calibrated evidence for the task are ineligible, so sending it for an uncalibrated task type returns 422. Policy default floors are separate and never cause a 422.
         allowed_providers:
           type: array
           items: { type: string, maxLength: 32 }
@@ -1389,7 +1392,7 @@ components:
         warnings:
           type: array
           items: { type: string }
-          description: 'Machine-readable codes, e.g. `param_dropped:presence_penalty`, `unknown_task_type:foo`, `default_min_quality:0.6`.'
+          description: 'Machine-readable codes, e.g. `param_dropped:presence_penalty`, `unknown_task_type:foo`, `default_min_quality:0.6`, `default_min_quality_skipped:uncalibrated`, `default_min_quality_unmet:0.6`, `quality_uncalibrated:<task_type>`, `latency_prior_used`.'
 
     Attempt:
       type: object
@@ -1945,7 +1948,7 @@ components:
       required: [contract_version, contract_release, endpoints, extensions, task_types, capabilities, routing_policies, feedback_metrics]
       properties:
         contract_version: { type: string, description: 'major.minor, the same as the X-ModelMesh-Contract header.' }
-        contract_release: { type: string, description: 'Full release label, e.g. 1.0.0-rc2.' }
+        contract_release: { type: string, description: 'Full release label, e.g. 1.0.0.' }
         endpoints:
           type: array
           items: { type: string }
@@ -1972,7 +1975,8 @@ components:
       type: object
       description: |
         Evidence behind `predicted_quality` and `min_quality` (ADR-0004/0005). A task type is usable with `min_quality`
-        only when `calibrated` is true. Otherwise any request with `min_quality` set for that task type returns 422.
+        only when `calibrated` is true. Otherwise any request that sends `min_quality` for that task type returns 422.
+        Requests that do not send it are unaffected (contract section 2.1.1).
       required: [router_version, generated_at, task_types]
       properties:
         router_version:

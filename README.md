@@ -14,8 +14,9 @@ No application code exists yet. This repository currently contains:
 - `docs/spec/PRODUCT_SPEC.md`: product specification (source of truth)
 - `docs/ENVIRONMENT.md`: verified development-machine facts and their implications
 - `docs/adr/`: architecture decision records 0001–0011
-- `docs/contract/inference-api-v1.md` and `openapi-v1.yaml`: the public API contract (1.0-rc2; Mezvuat change requests resolved in `CR_RESOLUTIONS.md`)
+- `docs/contract/inference-api-v1.md` and `openapi-v1.yaml`: the public API contract (1.0, frozen; Mezvuat change requests resolved in `CR_RESOLUTIONS.md`)
 - `docs/IMPLEMENTATION_PLAN.md`: milestones, acceptance tests and blockers
+- `docs/DECISIONS.md`: product-owner decisions, which override ADR and plan text
 
 Implementation starts at milestone M1 once the product owner authorizes it.
 

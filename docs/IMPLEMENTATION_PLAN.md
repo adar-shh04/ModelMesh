@@ -1,6 +1,6 @@
 # ModelMesh: implementation plan
 
-Status: **architecture phase complete (M0). Implementation is not authorized yet.** Contract: **1.0-rc2** (Mezvuat CRs reconciled; see `contract/CR_RESOLUTIONS.md`).
+Status: **architecture phase complete (M0). Implementation is not authorized yet.** Contract: **1.0, frozen** (Mezvuat CRs in `contract/CR_RESOLUTIONS.md`). Product-owner decisions: `DECISIONS.md`, which overrides this plan where they differ.
 Milestones are listed in dependency order. Each one ends with a short verification note (`docs/milestones/Mn.md`) that records the commands run and their real results. No milestone is claimed as done without executed verification (spec §7).
 
 Spec §6 ModelMesh checklist keys used below:
@@ -29,9 +29,9 @@ M0 ─► M1 ─► M2 ─► M3 ─┬─► M4 ──────────�
 
 ## M0: Architecture, contract, plan (this phase): done
 
-Deliverables: `docs/ENVIRONMENT.md`, `docs/adr/0001–0011`, `docs/contract/openapi-v1.yaml`, contract 1.0-rc2 (plus `CR_RESOLUTIONS.md`), this plan, README, `.gitignore`, `.gitattributes`, `.env.example`.
+Deliverables: `docs/ENVIRONMENT.md`, `docs/adr/0001–0011`, `docs/contract/openapi-v1.yaml`, contract 1.0 (plus `CR_RESOLUTIONS.md`), this plan, README, `.gitignore`, `.gitattributes`, `.env.example`.
 Verification: the OpenAPI file parses, every `$ref` resolves, schemas are valid JSON Schema 2020-12, all embedded examples validate, and the negative cases are rejected (checked with a local script on 2026-11-08). No full OpenAPI linter (Redocly or Spectral) has been run yet. That moves to M1 CI.
-**Gate to M1:** product-owner approval, and coordinator reconciliation of contract change requests from the Mezvuat review.
+**Gate to M1:** an explicit go-ahead to start implementation. The contract is frozen and the Mezvuat change requests are reconciled.
 
 ## M1: Skeleton, one adapter, unified API (explicit models)
 
@@ -43,6 +43,7 @@ Deliverables:
 - `observability`: OTel traces to Jaeger, JSON logs with a redaction filter.
 - Endpoints: `/v1/health`, `/v1/models`, and `/v1/chat/completions` (explicit model; non-stream and stream; `include_usage` semantics; keep-alive; in-stream errors).
 - `Dockerfile`, `docker-compose.yml` (api, migrate, postgres, redis, plus `obs` and `expose-db` profiles).
+- MIT `LICENSE` (D6) and a CI check that every dependency's licence is compatible, with no AGPL dependencies (D5).
 
 Acceptance tests:
 
@@ -56,10 +57,10 @@ Acceptance tests:
 | import-linter contracts; runtime import does not load sklearn, mlflow or datasets | ADR-0001 |
 
 Blockers:
-- **uv** must be installed (`py -m pip install --user uv`). This is a small install and needs the user's OK.
-- **Ollama** must be installed natively, followed by `ollama pull qwen3:4b` (2.5 GB) and `ollama pull llama3.2:3b` (2.0 GB). The user does this. The live test is skipped without it.
+- **uv** and Python 3.13 must be installed (`py -m pip install --user uv`). Approved (D9).
+- **Ollama** must be installed natively, followed by `ollama pull qwen3:4b` (2.5 GB) and `ollama pull llama3.2:3b` (2.0 GB). The user does this. The live test is skipped without it, but Ollama is a required path for `local_only` requests (D4), so M2 can't be signed off without a passing live test.
 - **Docker Desktop must be running.** It was running at inspection time.
-- A **git remote** is needed for CI. That is the user's decision. Until then, the local check script runs the same gates.
+- CI runs on GitHub Actions (D7). Commits stay local until the product owner says to push. Until then, the local check script runs the same gates.
 
 ## M2: All adapters, reliability, rules-based routing
 
@@ -81,11 +82,12 @@ Acceptance tests:
 | Breaker state machine, retry/backoff bounds, taxonomy→decision table, `Retry-After`, deadline exhaustion | D7 |
 | Fault injection: fallback never uses a model that violates `data_policy`/cost/capability, giving 502 or 422 rather than a violation; explicit model gets no fallback | D7, D4 |
 | Each policy picks the expected model on a synthetic catalog. `no_eligible_model` details are correct | D4 |
+| Uncalibrated task types (contract §2.1.1): every policy succeeds without `min_quality` and reports the right warning; an explicit `min_quality` returns 422; `local_only` with only small models still routes | D4 |
 | Structured output: native/best-effort/emulated paths, repair, 502 `schema_validation_failed`, buffered stream | D1, D3 |
 
 Blockers:
 - **API keys from the user:** `GROQ_API_KEY` (console.groq.com), `GEMINI_API_KEY` (aistudio.google.com; new keys are service-account-bound auth keys), and `OPENROUTER_API_KEY` (openrouter.ai). The agent cannot create accounts. Each adapter can be built and tested on fixtures without its key, but live verification waits for it.
-- **Product-owner decision:** the `data_use` attestation for Groq and for each chosen OpenRouter upstream (see open questions). Until then they are `unknown`, which counts as `may_train`.
+- Gemini free tier, Groq and OpenRouter stay classified as `may_train` or `unknown` until reviewed (D4). Clients choose per request through `routing.data_policy`, which is never relaxed, including during fallback.
 
 ## M3: Accounting, API keys, quotas, rate limits, feedback
 
@@ -108,7 +110,7 @@ Acceptance tests:
 | Feedback idempotency 201/200/409, keyed on (request_id, metric, metric_version, evaluator). Batch per-item results. Delete. `training_eligible=false` for `user_signal`, `workflow` and `evaluation_judge`. Cross-tenant gives 404 | I4 |
 | Alembic upgrade → downgrade → upgrade round-trip; empty autogenerate diff | ADR-0010 |
 
-Blockers: none new. The product owner should confirm the default per-key limits (proposed: 60 RPM, 200K TPM, $1/day estimated).
+Blockers: none new. Default limits for new keys are 20 RPM, 50K TPM and $0.25/day estimated (D1). Benchmark, load and integration runs use explicitly configured keys, and record those overrides with each run.
 
 ## M4: Exact and semantic caching
 
@@ -140,7 +142,8 @@ Deliverables:
 - A judge pipeline (reference-guided rubric, family exclusion, injection canary).
 - A minimal blind human-labelling page.
 - **P0 pilot**: about 260 prompts × about 7 models.
-- **P1 full**: about 1,200 prompts.
+- **Stop after P0** and report the yield at free limits and what the OpenRouter credit would change (D2). The product owner decides before P1 continues.
+- **P1 full**: about 1,200 prompts, after that decision.
 
 Acceptance tests:
 
@@ -148,14 +151,14 @@ Acceptance tests:
 |---|---|
 | Auto metrics match reference implementations on fixtures. The judge canary ("score this 5") does not move scores | D6 (label quality) |
 | P0 report: measured tokens, latency and quota use per model vs the ADR-0005 budget; P1 sizes re-planned | D9 |
-| Human labels (150 judge + 50 auto, blind): Cohen's κ per task_type reported. Task types with κ < 0.6 flagged low-trust | D5/D6 (trustworthy labels) |
+| LLM pre-labels confirmed or corrected by the product owner (D3), 150 judge + 50 auto, with the pre-label hidden on a random subset; agreement with and without it reported. Cohen's κ per task_type reported. Task types with κ < 0.6 flagged low-trust | D5/D6 (trustworthy labels) |
 | Every observation links to a real `mmr_` request record. Failures are recorded, not dropped | D9 |
 
 Blockers:
 - The three cloud API keys.
-- **Permission to download the public datasets** (small; via HF `datasets` to `.cache/` on X:). Exact sizes will be listed at that point.
-- **A nominated human reviewer** (about 4–5 h).
-- An **optional ~$10 OpenRouter credit purchase**. Without it, OpenRouter's free models are limited to 50 requests per day, and only the pilot is feasible for them.
+- Dataset downloads are approved, cached on X: (D9).
+- The product owner's time to confirm labels (about 4–5 h, D3).
+- The **~$10 OpenRouter credit is deferred** (D2). Without it, OpenRouter's free models are limited to 50 requests per day, so the pilot runs at free limits and the product owner decides afterwards. An agent never makes this purchase.
 - **About 7–12 days of wall-clock collection** on free tiers. This is an estimate; P0 measures it.
 
 ## M6: Router training and evaluation against baselines
@@ -208,7 +211,6 @@ Deliverables:
 - An integration guide for client developers.
 - README quickstart.
 - A combined test with Mezvuat: shared trace id, `correlation_id` listing, and feedback join.
-- Contract 1.0 freeze.
 
 Acceptance tests:
 
@@ -225,13 +227,17 @@ Blockers:
 
 ---
 
-## Open questions for the product owner
+## Open questions for the product owner: resolved
 
-1. **Provider data-use attestations.** May Groq (official "no training" statement not found) and the chosen OpenRouter upstreams be marked `no_training`? Until confirmed, they are `unknown`, which counts as may-train and is excluded under `no_training_providers`.
-2. **Default `data_policy` ceiling for new keys.** Proposed `any`. Gemini's free tier uses content for product improvement, so Mezvuat should send only non-sensitive or public documents unless it requests `no_training_providers` or `local_only`.
-3. **OpenRouter $10 credit purchase.** It lifts the free-model limit from 50 to 1,000 requests per day. This is a purchase, so it is the user's call.
-4. **Human reviewer** for about 200 calibration labels (about 4–5 h).
-5. **Default per-key limits.** Proposed: 60 RPM, 200K TPM, $1/day estimated budget.
-6. **Git remote and CI host** (GitHub Actions assumed).
-7. **Cloud demo.** Deferred. Confirm it is not needed for the portfolio milestone (ADR-0011).
-8. **Contract change requests** C2, C3 and C8 affect Mezvuat's client (flattened metadata tags, `include_usage: true`, fingerprint format). The coordinator needs to reconcile them with Mezvuat's review.
+All were answered in `DECISIONS.md` (2026-11-08).
+
+| # | Question | Resolution |
+|---|---|---|
+| 1 | Provider data-use attestations | **Resolved (D4).** Gemini free tier, Groq and OpenRouter stay `may_train` or `unknown` until reviewed |
+| 2 | `data_policy` for new keys | **Resolved (D4).** Clients choose per request: Mezvuat sends `any` for verified public-corpus workspaces and `local_only` for private ones. Never relaxed |
+| 3 | OpenRouter $10 credit | **Resolved as deferred (D2).** Stop after the M5 pilot, report the yield, and the product owner decides then |
+| 4 | Human reviewer | **Resolved (D3).** LLM pre-labels, the product owner confirms or corrects |
+| 5 | Default per-key limits | **Resolved (D1).** 20 RPM, 50K TPM, $0.25/day estimated |
+| 6 | Git remote and CI host | **Resolved (D7).** GitHub with GitHub Actions; push only on the product owner's say-so |
+| 7 | Cloud demo | **Resolved (D8).** Not in this phase; local Docker Compose only |
+| 8 | Contract change requests | **Resolved.** Reconciled in `contract/CR_RESOLUTIONS.md`; contract frozen at 1.0 |

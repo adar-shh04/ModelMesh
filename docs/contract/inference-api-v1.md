@@ -1,6 +1,6 @@
-# ModelMesh Inference API: Contract v1 (1.0-rc2)
+# ModelMesh Inference API: Contract v1 (1.0)
 
-Status: **release candidate 2**. This release incorporates the dispositions of Mezvuat's change requests CR-01 to CR-14 (see `CR_RESOLUTIONS.md`).
+Status: **frozen at 1.0**. Later v1 changes are additive and optional only. This release incorporates the dispositions of Mezvuat's change requests CR-01 to CR-14 (see `CR_RESOLUTIONS.md`).
 
 - **Owner:** ModelMesh.
 - **Consumers:** Mezvuat AI and any OpenAI-compatible client.
@@ -106,7 +106,7 @@ Extensions (all optional):
 If no candidate survives, the response is **422 `no_eligible_model`**. Its `details.violated_constraints` lists, for each constraint, `{constraint, excluded_candidates, best_available}`.
 
 ModelMesh never relaxes a hard constraint silently, including during fallback. Specific cases:
-- When `min_quality` is set, a model with no calibrated evidence for that task_type is ineligible (§2.4).
+- When the caller sends `min_quality`, a model with no calibrated evidence for that task_type is ineligible (§2.4). A policy's default floor is not a hard constraint (§2.1.1).
 - `data_use` is attested by the operator **per configured provider account and tier**. For example, a Gemini free-tier account is `may_train` and a paid account is `no_training`. `no_training_providers` excludes `may_train` and `unknown`.
 - A `data_policy` looser than the key's ceiling returns 403.
 
@@ -114,7 +114,7 @@ ModelMesh never relaxes a hard constraint silently, including during fallback. S
 
 | Policy | Objective | Constraints honoured |
 |---|---|---|
-| `cost_optimized` | Minimum estimated cost | `min_quality` (policy default 0.6 if unset, reported in warnings), `max_latency_ms`, `max_cost_usd` |
+| `cost_optimized` | Minimum estimated cost | `min_quality` (if unset, default floor 0.6 on calibrated task types only; see §2.1.1), `max_latency_ms`, `max_cost_usd` |
 | `latency_optimized` | Minimum predicted p50 latency | `min_quality`, `max_cost_usd` |
 | `quality_balanced` | **Cheapest model whose predicted quality is within δ = 0.05 of the best eligible prediction** | All |
 | `quality_max` | Maximum predicted quality | All that are set |
@@ -123,6 +123,31 @@ ModelMesh never relaxes a hard constraint silently, including during fallback. S
 The router returns a ranked list of eligible models. That list is also the fallback order.
 
 If no learned router is active, or the learned router has low confidence for a request, ModelMesh uses the documented rules policy and reports `routing.mode = "rules_fallback"`. Low confidence means the request is out of distribution, or its task_type or model was not seen in training.
+
+#### 2.1.1 Quality floors and missing calibration
+
+**An explicit `routing.min_quality` is a hard constraint under every policy.** Models with no calibrated evidence are ineligible, and if nothing remains the response is 422 `no_eligible_model`.
+
+**The `cost_optimized` default floor (0.6) is a policy default, not a hard constraint.** It applies only when the caller sent no `min_quality` and the task_type is calibrated (`GET /v1/routing/calibration`).
+- When it applies, the response reports `default_min_quality:0.6` in `routing.warnings`.
+- When the task_type is not calibrated, no floor applies, and the response reports `default_min_quality_skipped:uncalibrated`.
+- If the floor applies but no eligible model meets it, the floor is dropped, the policy objective decides, and the response reports `default_min_quality_unmet:0.6`.
+
+**A request that did not send `min_quality` never gets a 422 because of quality or missing calibration.**
+
+Behaviour when the task_type is not calibrated (`predicted_quality` is `null` and `routing.mode` is `rules_fallback`):
+
+| Policy | Behaviour | Warning |
+|---|---|---|
+| `cost_optimized` | Minimum estimated cost among eligible models, with no floor | `default_min_quality_skipped:uncalibrated` |
+| `latency_optimized` | Unchanged; it does not use predicted quality unless `min_quality` was sent | none |
+| `quality_balanced` | Rules policy: the task_type's size tier, cheapest model within it. If that tier has no eligible model, the nearest eligible tier is used | `quality_uncalibrated:<task_type>` |
+| `quality_max` | Rules policy: the largest eligible size tier, cheapest model within it | `quality_uncalibrated:<task_type>` |
+| `reliability_first` | Unchanged; it does not use predicted quality | none |
+
+When the task_type is calibrated but a particular model is not, that model does not enter the quality comparison. It is ranked after the models that have evidence and stays available for fallback, unless the caller sent `min_quality`.
+
+The same cold-start rule covers latency. Cost predictions come from the catalog and always exist. Latency predictions come from telemetry, or from a per-model catalog prior before telemetry exists (`latency_prior_used` in warnings), so `max_latency_ms` can be evaluated on a fresh deployment. With no telemetry, `reliability_first` ties all models and the cost tie-break decides.
 
 ### 2.2 `task_type` (v1)
 
@@ -212,7 +237,7 @@ Reading `min_quality: 0.7`: among requests like this one, at least about 70% of 
 - Cohen's κ between judge and human labels, for judge-labelled tasks
 - per-model coverage
 
-Clients should send `min_quality` only for task types where `calibrated` is `true`. Until router training (M6) has produced results, every task type reports `calibrated: false`.
+Clients should send `min_quality` only for task types where `calibrated` is `true`, because an explicit `min_quality` on an uncalibrated task type returns 422. Until router training (M6) has produced results, every task type reports `calibrated: false`. Requests without `min_quality` still work; see §2.1.1.
 
 ### 2.5 Structured output (ADR-0007)
 
@@ -442,6 +467,14 @@ Upstream quota exhaustion is deliberately reported as **503 `upstream_capacity`*
 4. **Retention:** prompt and response content retention is off by default, with a 7-day TTL when enabled (ADR-0010).
 
 ## 7. Changelog
+
+### 1.0 (2026-11-08): frozen
+
+| # | Change | Client impact |
+|---|---|---|
+| F1 (CQ-1) | The `cost_optimized` default floor of 0.6 applies only to calibrated task types and is no longer a hard constraint. An explicit `min_quality` stays hard. Previously every `cost_optimized` request would have returned 422 until M6 | None required. New warning codes: `default_min_quality_skipped:uncalibrated`, `default_min_quality_unmet:0.6`, `quality_uncalibrated:<task_type>`, `latency_prior_used` |
+| F2 | Defined `quality_balanced` and `quality_max` when predicted quality is unavailable: they use the rules policy (§2.1.1). Defined the mixed case of a calibrated task type with an uncalibrated model | None |
+| F3 | `max_latency_ms` falls back to a per-model catalog prior before telemetry exists | None |
 
 ### 1.0-rc2 (2026-11-08): Mezvuat change requests reconciled
 

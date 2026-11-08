@@ -25,16 +25,15 @@ The product must run on its own with Docker, and alongside Mezvuat without depen
 | `postgres` | `postgres:17-alpine` | not published (`55432` with the `expose-db` profile) | 384 MB | default |
 | `redis` | `redis:8-alpine` (the alpine variant is UNVERIFIED for the Query Engine; use the plain `redis:8` image if the M4 smoke test fails) | not published (`56379` with `expose-db`) | 320 MB | default |
 | `jaeger` | `jaegertracing/jaeger:2.x` (exact tag pinned in M1) | `16686` UI, OTLP internal only | 256 MB | `obs` |
-| `lgtm` | `grafana/otel-lgtm` (pinned in M1) | `3001` | measured in M1 | `lgtm` |
 
 - **Ollama is not in compose.** It runs natively, and the API reaches it at `http://host.docker.internal:11434` (`OLLAMA_BASE_URL`). A compose `extra_hosts: host-gateway` entry handles this on non-Desktop engines.
 - **Coexisting with Mezvuat.** Mezvuat's containers call ModelMesh at `http://host.docker.internal:8100/v1`, the same public endpoint any client uses. There is no shared Docker network, database or volume. An optional external network can be documented later, but it is never required.
 - Secrets come from `.env`, which is gitignored and has no defaults for secrets. The container fails fast if a required secret is missing for an enabled provider.
 - The default stack budget is about 1.7 GB of limits, and expected real use is under 1.2 GB. Measured in M1 with `docker stats`.
-- **CI:** GitHub Actions (lint, type check, unit tests, integration tests with Postgres and Redis service containers, Alembic round-trip, OpenAPI conformance, image build). This needs a git remote, which is the user's decision. Until then, the same checks run through a `make`-style script (`scripts/check.ps1` and `scripts/check.sh`).
+- **CI:** GitHub Actions (lint, type check, unit tests, integration tests with Postgres and Redis service containers, Alembic round-trip, OpenAPI conformance, image build). Hosting is GitHub (DECISIONS D7), and pushes happen only when the product owner says so. Until then, the same checks run through a `make`-style script (`scripts/check.ps1` and `scripts/check.sh`).
 - **Release:** the image is tagged with the version and git SHA. The contract version is served in `X-ModelMesh-Contract`.
 
-**Cloud: deferred.** When the product owner wants a public demo, the cheapest credible option is the same compose stack on a single VM behind Caddy (automatic TLS). Ollama would be replaced by cloud providers or a small CPU model there. This would be recorded as a new ADR with cost estimates. No cloud-specific code is written now.
+**Cloud: not in this phase (DECISIONS D8).** If the product owner later wants a public demo, the cheapest credible option is the same compose stack on a single VM behind Caddy (automatic TLS). Ollama would be replaced by cloud providers or a small CPU model there. This would be recorded as a new ADR with cost estimates. No cloud-specific code is written now.
 
 ## Consequences
 
@@ -47,3 +46,9 @@ The product must run on its own with Docker, and alongside Mezvuat without depen
 - M1: from inside a throwaway container on a separate network, `curl http://host.docker.internal:8100/v1/health` succeeds. This simulates how Mezvuat reaches ModelMesh.
 - M2: the `api` container reaches native Ollama through `host.docker.internal`.
 - M8: a fresh-machine walkthrough of README quickstart, timed and documented.
+
+## Amendment 2026-11-08 (docs/DECISIONS.md D5, D6)
+
+- The `grafana/otel-lgtm` profile is removed because its components are AGPL (D5).
+- **To confirm in M1:** Redis 8 is distributed under a choice of RSALv2, SSPLv1 or AGPLv3 (from memory; not re-verified). ModelMesh would run it unmodified as a separate service under RSALv2, not AGPL. If the product owner reads D5 as excluding it, ADR-0006 needs another vector store.
+- The repository licence is MIT (D6). M1 adds `LICENSE` and a dependency licence check.
