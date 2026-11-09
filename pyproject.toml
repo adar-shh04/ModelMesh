@@ -41,6 +41,7 @@ dev = [
     "types-jsonschema",
 ]
 load = ["locust>=2.47"]
+ml = ["datasets>=5.1"]
 
 [build-system]
 requires = ["hatchling"]
@@ -66,6 +67,7 @@ ignore = ["S101"]
 "tests/**" = ["S", "T20"]
 "migrations/**" = ["E501"]
 "src/modelmesh/cli.py" = ["T20"]
+"src/modelmesh/ml/benchmark/__main__.py" = ["T20"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -75,7 +77,7 @@ plugins = ["pydantic.mypy"]
 mypy_path = "src"
 
 [[tool.mypy.overrides]]
-module = ["respx.*", "opentelemetry.instrumentation.*"]
+module = ["respx.*", "opentelemetry.instrumentation.*", "datasets.*", "fastembed.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

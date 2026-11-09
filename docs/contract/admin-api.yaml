@@ -1,0 +1,364 @@
+openapi: 3.1.0
+info:
+  title: ModelMesh Admin API
+  summary: Operator API. Not part of the client inference contract. Authenticated
+    with MODELMESH_ADMIN_TOKEN.
+  version: 1.0.0
+paths:
+  /admin/v1/tenants:
+    post:
+      summary: Create Tenant
+      operationId: create_tenant_admin_v1_tenants_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Create Tenant Admin V1 Tenants Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/tenants/{tenant_id}:
+    patch:
+      summary: Update Tenant
+      operationId: update_tenant_admin_v1_tenants__tenant_id__patch
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Tenant Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantSettings'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Update Tenant Admin V1 Tenants  Tenant Id  Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/tenants/{tenant_id}/keys:
+    post:
+      summary: Create Key
+      operationId: create_key_admin_v1_tenants__tenant_id__keys_post
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Tenant Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KeyCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Create Key Admin V1 Tenants  Tenant Id  Keys Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      summary: List Keys
+      operationId: list_keys_admin_v1_tenants__tenant_id__keys_get
+      parameters:
+      - name: tenant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Tenant Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response List Keys Admin V1 Tenants  Tenant Id  Keys Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/keys/{key_id}/revoke:
+    post:
+      summary: Revoke Key
+      operationId: revoke_key_admin_v1_keys__key_id__revoke_post
+      parameters:
+      - name: key_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Key Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Revoke Key Admin V1 Keys  Key Id  Revoke Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/keys/{key_id}/rotate:
+    post:
+      summary: Rotate Key
+      operationId: rotate_key_admin_v1_keys__key_id__rotate_post
+      parameters:
+      - name: key_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Key Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Rotate Key Admin V1 Keys  Key Id  Rotate Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/providers/{provider}:
+    put:
+      summary: Set Provider
+      operationId: set_provider_admin_v1_providers__provider__put
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderToggle'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Set Provider Admin V1 Providers  Provider  Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    KeyCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        env:
+          type: string
+          enum:
+          - live
+          - test
+          title: Env
+          default: live
+        limits:
+          $ref: '#/components/schemas/KeyLimitsInput'
+        scopes:
+          $ref: '#/components/schemas/KeyScopes'
+        data_policy_ceiling:
+          type: string
+          enum:
+          - any
+          - no_training_providers
+          - local_only
+          title: Data Policy Ceiling
+          default: any
+        content_retention:
+          type: boolean
+          title: Content Retention
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      title: KeyCreate
+    KeyLimitsInput:
+      properties:
+        rpm:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Rpm
+        tpm:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Tpm
+        concurrency:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Concurrency
+        daily_budget_usd:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Daily Budget Usd
+        monthly_budget_usd:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Monthly Budget Usd
+      additionalProperties: false
+      type: object
+      title: KeyLimitsInput
+    KeyScopes:
+      properties:
+        allowed_providers:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Allowed Providers
+        allowed_models:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Allowed Models
+        cache_enabled:
+          type: boolean
+          title: Cache Enabled
+          default: true
+        cache_max_ttl_s:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Cache Max Ttl S
+      additionalProperties: false
+      type: object
+      title: KeyScopes
+    ProviderToggle:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+      additionalProperties: false
+      type: object
+      required:
+      - enabled
+      title: ProviderToggle
+    TenantCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        settings:
+          additionalProperties: true
+          type: object
+          title: Settings
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      title: TenantCreate
+    TenantSettings:
+      properties:
+        settings:
+          additionalProperties: true
+          type: object
+          title: Settings
+      additionalProperties: false
+      type: object
+      required:
+      - settings
+      title: TenantSettings
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

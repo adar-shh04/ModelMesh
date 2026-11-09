@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "phase-*"]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: modelmesh
+          POSTGRES_PASSWORD: modelmesh
+          POSTGRES_DB: modelmesh
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U modelmesh" --health-interval 3s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ["56379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 3s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.13.7"
+      - run: uv python install 3.13
+      - run: uv sync --frozen --group ml
+      - name: Lint and format
+        run: uv run ruff check src tests migrations && uv run ruff format --check src tests migrations
+      - name: Type check
+        run: uv run mypy
+      - name: Module boundaries
+        run: uv run lint-imports
+      - name: Tests (live-provider tests skip without credentials)
+        run: uv run pytest tests
+
+  unit-python-314:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.13.7"
+      - run: uv python install 3.14
+      - run: uv sync --frozen --python 3.14
+      - run: uv run --python 3.14 pytest tests/unit tests/contract
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compose file is valid
+        run: docker compose config --quiet
+      - name: Image builds
+        run: docker compose build api

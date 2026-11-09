@@ -6,7 +6,7 @@ x-app: &app
   build: .
   image: modelmesh-api:local
   env_file:
-    - path: .env
+    - path: ${MODELMESH_ENV_FILE:-.env}
       required: false
   environment:
     MODELMESH_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-modelmesh}:${POSTGRES_PASSWORD:-modelmesh}@postgres:5432/${POSTGRES_DB:-modelmesh}
