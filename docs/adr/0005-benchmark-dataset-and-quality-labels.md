@@ -150,3 +150,9 @@ Stored as **candidate** labels with `label_source`:
 - **D3, labelling.** An LLM pre-labels and the product owner confirms or corrects. This supersedes fully blind labelling, because a visible pre-label can anchor the reviewer. To measure that, the pre-label is hidden on a random subset; agreement with and without the pre-label is reported and the limitation documented. Pre-labels come from a model outside the labelled model's family. The Cohen's kappa gate of 0.6 still applies.
 - **D2, OpenRouter credit.** Deferred. **M5 stops after the P0 pilot** and reports the yield at free limits and what the credit would change. P1 does not start for OpenRouter until the product owner decides. The credit is never assumed and never purchased by an agent.
 - **D9, downloads.** Benchmark dataset downloads are approved, cached on X:.
+
+## Amendment 2026-11-09 (M5 harness)
+
+- **Query rewriting uses QReCC** (CC BY-SA 3.0) instead of CANARD, whose download now returns HTTP 403. QReCC was the alternative named in the original survey.
+- Benchmark outputs and judgements are kept in local JSONL files per run, resumable by (item, model). This replaces the `bench_*` tables in ADR-0010: benchmark content stays out of the service database, and the harness stays on the public API.
+- The IFEval checkers cover 23 instruction types. Items using `language:*` or other unimplemented types are excluded at load time and counted in the manifest.

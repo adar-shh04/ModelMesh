@@ -72,3 +72,9 @@ modelmesh/                      repo root
 - M1: `lint-imports` passes in CI. A deliberately violating import in a test fixture makes it fail.
 - M1: a test asserts that `import modelmesh.api.app` does not load `sklearn`, `mlflow` or `datasets` (checked via `sys.modules`).
 - M6: a router-latency micro-benchmark (p95 under 10 ms excluding embedding, and under 25 ms including bge-small on CPU), recorded in the M6 report.
+
+## Amendment 2026-11-09 (implementation)
+
+- Contract models live in `modelmesh.contract`, not `modelmesh.api`, because the request pipeline needs them and may not import the API layer.
+- `policy` sits one layer above `routing`, so the policy engine can use candidate estimates without a cycle.
+- The `dashboard` module arrives with M7. `ml.features`, `ml.artifacts`, `ml.training` and `ml.evaluation` arrive with M6.

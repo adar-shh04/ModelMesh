@@ -103,3 +103,11 @@ Eviction must never drop limit counters before cache entries. Limits and cache t
 - `DELETE /v1/feedback/{request_id}` hard-deletes rows.
 - Dataset builds record label ids, so deleted labels are excluded from the next rebuild.
 - The `requests.status` enum gains `cancelled`.
+
+## Amendment 2026-11-09 (implementation)
+
+- The model catalog and pricing are served from versioned YAML (`config/`). The `models` and `pricing` tables in the outline were not created, and each usage record stores its `pricing_version`.
+- `bench_*` tables are replaced by local run files (ADR-0005 amendment). `router_models` arrives with M6.
+- RPM and TPM use GCRA with a burst equal to the limit: a key can spend a full minute's allowance at once and it then refills smoothly, so a 60-second window can see up to about twice the limit at the very start.
+- A TPM reservation larger than the remaining allowance is rejected, even if the call would turn out to use fewer tokens.
+- Postgres and Redis are published on loopback (ports 55432 and 56379) by default instead of behind an `expose-db` profile (ADR-0011), so local tests can reach them.

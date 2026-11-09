@@ -58,3 +58,8 @@ The machine has only CPython 3.14.3 and no uv (see ENVIRONMENT.md). The spec's s
 - M1: `uv sync` on Windows and inside the Linux image both succeed from the same `uv.lock`.
 - M1: CI runs `ruff check`, `ruff format --check`, `mypy --strict src`, `lint-imports`, and `pytest -m "not live"`.
 - M1: an OpenAPI conformance test (generated spec compared with `openapi-v1.yaml`) is green.
+
+## Amendment 2026-11-09 (implementation)
+
+- Added `tzdata` (Gemini's Pacific-midnight quota reset needs time-zone data on Windows and slim images) and `pyyaml` (catalog files).
+- `numpy` arrives through fastembed. `lightgbm` and `jinja2` are not installed yet; they arrive with M6 and M7 if needed.

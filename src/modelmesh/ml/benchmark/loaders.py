@@ -82,12 +82,12 @@ def _build_clinc150(count: int, rng: random.Random, raw: Path) -> list[BenchItem
 
 def _build_qrecc(count: int, rng: random.Random, raw: Path) -> list[BenchItem]:
     archive = zipfile.ZipFile(io.BytesIO(_download(QRECC_URL, raw / "qrecc_data.zip")))
-    with archive.open("qrecc-test.json") as handle:
+    with archive.open("qrecc_test.json") as handle:
         records = json.load(handle)
-    usable = [r for r in records if r.get("Context") and r.get("Truth_rewrite")]
+    usable = [r for r in records if r.get("Context") and r.get("Rewrite")]
     return [
         templates.rewrite_item(
-            "qrecc", f"{r['Conversation_no']}_{r['Turn_no']}", r["Context"], r["Question"], r["Truth_rewrite"]
+            "qrecc", f"{r['Conversation_no']}_{r['Turn_no']}", r["Context"], r["Question"], r["Rewrite"]
         )
         for r in _sample(usable, count, rng)
     ]

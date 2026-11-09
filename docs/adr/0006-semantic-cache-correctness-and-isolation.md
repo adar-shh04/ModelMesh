@@ -82,3 +82,9 @@ These resolve the draft's §2.3. The `cache` block itself is unchanged apart fro
   - Streams that fail mid-way are not stored.
 - Integration test against real Redis 8: FT index creation, filtered KNN, TTL expiry, and the purge endpoint.
 - M4 report: θ calibration (false-hit and hit rates per task_type, with CIs), and cache latency overhead p95 (target under 5 ms exact, under 20 ms semantic including embedding).
+
+## Amendment 2026-11-09 (M4)
+
+- `redis:8-alpine` was checked: Redis 8.10 with the `search`, `timeseries` and `bf` modules loaded, and `FT.CREATE` with a `VECTOR` field succeeds. The in-process fallback was not needed.
+- Redis 8 is offered under RSALv2, SSPLv1 or AGPLv3 (`LICENSE.txt` in the Redis repository, checked 2026-11-09). It runs unmodified as a separate server, under RSALv2. The product owner has not yet reviewed that reading of D5, so the store stays behind `ResponseCache`.
+- Limits and cache share Redis DB 0. Eviction is not configured on the local stack, so the separation by logical DB in ADR-0010 is deferred; `maxmemory` is not set either.

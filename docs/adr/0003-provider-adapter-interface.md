@@ -100,3 +100,9 @@ To be confirmed when M2 starts.
   - Each case is asserted against the normalized output and the error taxonomy.
 - **Live smoke tests** (`pytest -m live`, skipped without keys): one non-stream and one stream request per configured model, plus a json_schema request where the catalog claims support. Recorded token usage must be present or explicitly `estimated`. These tests also re-verify every UNVERIFIED cell above, and results are written back into this ADR.
 - **Drift check:** `modelmesh catalog verify` compares `config/models.yaml` with provider `/models` responses and exits non-zero on mismatch.
+
+## Amendment 2026-11-09 (implementation)
+
+- OpenRouter models chosen from `/api/v1/models` on 2026-11-09: `nvidia/nemotron-3.5-super-vl:free` and `liquid/lfm-3-1.7b:free`. Both report structured-output and tool support, and are outside the Gemini and gpt-oss families. Their `json_schema` mode is catalogued as `best_effort` until live tests confirm strict enforcement.
+- Ollama's `num_ctx` cannot be set through the `/v1` endpoint, so the context size is set on the Ollama server with `OLLAMA_CONTEXT_LENGTH`.
+- No UNVERIFIED cell has been re-checked against a live provider, because no API keys exist yet.

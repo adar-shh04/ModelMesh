@@ -74,3 +74,8 @@ Mezvuat stores (1)–(4) with its evaluation records and posts quality labels to
 - Log/span redaction canary test.
 - Integration test (M1): compose with Jaeger, issue a request, and query the Jaeger API for the trace by id.
 - Combined test (M8, with Mezvuat): one trace id spans a Mezvuat run and ModelMesh, and `/v1/requests?correlation_id=` returns all its executions.
+
+## Amendment 2026-11-09 (implementation)
+
+- The attempt span is created by hand (`mm.attempt`) rather than with the httpx instrumentation. That also guarantees no `traceparent` is sent to providers.
+- `mm.breaker.state` and `mm.quota.remaining` are not exported yet. `/v1/providers` and `/v1/models` report the same information.

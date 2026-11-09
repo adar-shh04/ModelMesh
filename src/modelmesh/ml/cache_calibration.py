@@ -211,9 +211,7 @@ async def measure_lookup_latency(redis_url: str, *, cache_dir: str | None, model
         return statistics.quantiles(timings, n=20)[18]
 
     results = {"exact_lookup_p95_ms": await percentile("exact"), "semantic_lookup_p95_ms": await percentile("semantic")}
-    await cache.invalidate(tenant, None, None) if False else None
-    async for key in redis.scan_iter(match=f"mm:c:{tenant}:*", count=500):
-        await redis.delete(key)
+    await cache.invalidate(tenant, None, None)
     await redis.aclose()
     return {name: round(value, 2) for name, value in results.items()}
 
