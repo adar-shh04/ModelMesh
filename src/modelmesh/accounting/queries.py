@@ -117,7 +117,8 @@ class AccountingQueries:
             .scalar_subquery()
         )
         return select(db.RequestRecord, db.RequestContent, feedback_count.label("feedback_count")).outerjoin(
-            db.RequestContent, db.RequestContent.request_id == db.RequestRecord.id
+            db.RequestContent,
+            and_(db.RequestContent.request_id == db.RequestRecord.id, db.RequestContent.expires_at > func.now()),
         )
 
     @staticmethod

@@ -57,6 +57,19 @@ class AdminService:
                 "settings": tenant.settings,
             }
 
+    async def delete_tenant(self, tenant_id: str) -> None:
+        """Delete a tenant. Keys, records, usage, feedback and retained content go with it (ON DELETE CASCADE)."""
+        async with self._sessions.begin() as session:
+            tenant = await session.get(db.Tenant, tenant_id)
+            if tenant is None:
+                raise ApiError("not_found", "Unknown tenant.", code="tenant_not_found")
+            digests = list(
+                (await session.execute(select(db.ApiKey.hmac).where(db.ApiKey.tenant_id == tenant_id))).scalars()
+            )
+            await session.delete(tenant)
+        for digest in digests:
+            await self._authenticator.forget(digest)
+
     async def create_key(
         self,
         tenant_id: str,

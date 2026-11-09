@@ -12,6 +12,7 @@ from sqlalchemy import select, text
 
 from conftest import ROOMY_LIMITS, Api, assert_matches, build_api, make_settings
 from doubles import make_model, reply
+from modelmesh.accounting.retention import purge_expired
 from modelmesh.core.errors import ErrorClass, ProviderError
 from modelmesh.persistence import models as db
 from modelmesh.providers.types import TokenUsage
@@ -194,6 +195,45 @@ async def test_content_retention_when_enabled(api: Api) -> None:
     assert_matches("RequestRecord", record)
     assert record["content"]["messages"][0]["content"] == "hello"
     assert record["content"]["response"]["content"] == "echo: hello"
+
+
+async def test_expired_content_is_hidden_and_purged(api: Api) -> None:
+    key = await api.new_key(content_retention=True, limits=ROOMY_LIMITS)
+    response = await api.client.post("/v1/chat/completions", json=message_body(), headers=client_for(api, key))
+    request_id = response.headers["x-modelmesh-request-id"]
+    past = datetime.now(UTC) - timedelta(minutes=1)
+    async with api.services.engine.begin() as connection:
+        await connection.execute(text("UPDATE request_content SET expires_at = :t"), {"t": past})
+    record = (await api.client.get(f"/v1/requests/{request_id}", headers=client_for(api, key))).json()
+    assert record["content"] is None
+    assert await purge_expired(api.services.sessions) == (1, 0)
+    async with api.services.sessions() as session:
+        assert await session.get(db.RequestContent, request_id) is None
+
+
+async def test_old_execution_records_are_purged_after_90_days(api: Api) -> None:
+    response = await api.chat()
+    request_id = response.headers["x-modelmesh-request-id"]
+    assert await purge_expired(api.services.sessions, now=datetime.now(UTC) + timedelta(days=89)) == (0, 0)
+    assert await purge_expired(api.services.sessions, now=datetime.now(UTC) + timedelta(days=91)) == (0, 1)
+    assert (await api.client.get(f"/v1/requests/{request_id}", headers=api.headers)).status_code == 404
+
+
+async def test_tenant_deletion_removes_everything_including_cache(api: Api) -> None:
+    other = await api.admin.create_tenant("doomed")
+    key = await api.new_key(other["id"], limits=ROOMY_LIMITS)
+    headers = client_for(api, key)
+    await api.client.post("/v1/chat/completions", json=message_body(temperature=0), headers=headers)
+    assert await api.services.redis.keys(f"mm:c:{other['id']}:*")
+    response = await api.client.delete(f"/admin/v1/tenants/{other['id']}", headers=ADMIN)
+    assert response.json()["cache_entries_deleted"] == 1
+    assert not await api.services.redis.keys(f"mm:c:{other['id']}:*")
+    assert (await api.client.get("/v1/models", headers=headers)).status_code == 401
+    async with api.services.engine.connect() as connection:
+        remaining = (
+            await connection.execute(text("SELECT count(*) FROM requests WHERE tenant_id = :t"), {"t": other["id"]})
+        ).scalar_one()
+    assert remaining == 0
 
 
 # ---------------------------------------------------------------- tenant isolation

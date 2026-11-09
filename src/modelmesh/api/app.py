@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -12,6 +13,7 @@ import yaml
 from fastapi import FastAPI
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from modelmesh.accounting.retention import retention_loop
 from modelmesh.api.admin import admin_router
 from modelmesh.api.errors import install_error_handlers
 from modelmesh.api.middleware import RequestIdentityMiddleware
@@ -46,7 +48,9 @@ def create_app(services: Services | None = None, settings: Settings | None = Non
             await svc.cache.prepare()
         except Exception:  # Redis may still be starting; exact and semantic lookups degrade safely.
             logger.warning("cache preparation failed")
+        sweeper = asyncio.create_task(retention_loop(svc.sessions))
         yield
+        sweeper.cancel()
         await svc.aclose()
 
     # The published contract is authoritative, so FastAPI's generated documents are not served.

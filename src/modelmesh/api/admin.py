@@ -101,6 +101,14 @@ async def update_tenant(tenant_id: str, body: TenantSettings, admin: AdminDep) -
     return await admin.update_tenant_settings(tenant_id, body.settings)
 
 
+@admin_router.delete("/tenants/{tenant_id}")
+async def delete_tenant(tenant_id: str, request: Request, admin: AdminDep) -> Any:
+    await admin.delete_tenant(tenant_id)
+    svc: Services = request.app.state.services
+    purged = await svc.cache.invalidate(tenant_id, None, None)
+    return {"id": tenant_id, "status": "deleted", "cache_entries_deleted": purged}
+
+
 @admin_router.post("/tenants/{tenant_id}/keys", status_code=201)
 async def create_key(tenant_id: str, body: KeyCreate, admin: AdminDep) -> Any:
     return await admin.create_key(
