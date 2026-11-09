@@ -114,7 +114,7 @@ def _build_musique_suff(count: int, rng: random.Random, raw: Path) -> list[Bench
 
 
 def _build_qasper(count: int, rng: random.Random, raw: Path) -> list[BenchItem]:
-    papers = list(_load_hf("allenai/qasper", "qasper", "test"))
+    papers = list(_load_hf("allenai/qasper", None, "test"))
     items = [item for paper in papers for item in templates.qasper_items(paper)]
     return _sample(items, count, rng)
 

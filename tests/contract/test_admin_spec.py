@@ -58,6 +58,7 @@ async def test_catalog_verify_reports_drift(
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
     monkeypatch.setenv("MODELMESH_MODEL_CATALOG_PATH", "config/models.yaml")
+    monkeypatch.setenv("MODELMESH_ENABLE_FAKE_PROVIDER", "false")
     get_settings.cache_clear()
     listed = {"data": [{"id": "openai/gpt-oss-20b", "context_window": 131072, "active": True}]}
     respx.get("https://api.groq.com/openai/v1/models").mock(return_value=httpx.Response(200, json=listed))

@@ -71,3 +71,19 @@ Latest gate results are in the table at the end of this file.
 Built: dataset loaders, prompt templates, manifests, automatic metrics, the judge with family exclusion, a resumable runner over the public API, and a review page for human confirmation of labels (DECISIONS D3).
 
 The pilot has **not** been run. It needs API keys, and then the product owner's OpenRouter decision (D2).
+
+| Check | Result |
+|---|---|
+| Automatic metrics against reference values; judge canary; family exclusion; resumable runner; review page | Passed |
+| Harness run end to end against the Compose stack with the fake provider (run, judge, review-sample, report) | Passed; no real provider was called |
+| Loaders against real downloads | 13 of 14 sources produced items. **`musique_suff` is not verified**: downloading the MuSiQue `default` config stalled for over 5 minutes, twice |
+| `prepare --profile pilot` as a whole | **Not completed**, because of the stalled `musique_suff` download |
+
+## Latest gate results
+
+| Gate | Result |
+|---|---|
+| ruff check and format | Clean (94 files) |
+| mypy --strict | Clean (76 source files) |
+| import-linter | 3 contracts kept |
+| pytest (real Postgres and Redis) | 502 passed, 24 skipped, 0 failed. All 24 skips are live-provider tests, which did **not** run |
