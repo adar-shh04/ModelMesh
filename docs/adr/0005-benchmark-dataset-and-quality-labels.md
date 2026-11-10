@@ -156,3 +156,13 @@ Stored as **candidate** labels with `label_source`:
 - **Query rewriting uses QReCC** (CC BY-SA 3.0) instead of CANARD, whose download now returns HTTP 403. QReCC was the alternative named in the original survey.
 - Benchmark outputs and judgements are kept in local JSONL files per run, resumable by (item, model). This replaces the `bench_*` tables in ADR-0010: benchmark content stays out of the service database, and the harness stays on the public API.
 - The IFEval checkers cover 23 instruction types. Items using `language:*` or other unimplemented types are excluded at load time and counted in the manifest.
+
+## Amendment 2026-11-11 (pilot preparation)
+
+- **`evidence_assessment` items come from the MuSiQue `answerable` config only.** Downloading the `default` (MuSiQue-Full) config stalled repeatedly. Half the items keep every paragraph (sufficient). The other half, built from different questions, have their supporting paragraphs removed so only distractors remain (insufficient). This is the same construction MuSiQue-Full uses for its contrast questions, with the same licence (CC BY 4.0). The difference is that there is no paired original question in the set.
+- **Pilot pacing**, applied client-side on top of the gateway's quota tracker:
+  - `--pace provider=rpm:max_requests:timeout_ms` limits requests per provider.
+  - Capacity responses (429, 503 `upstream_capacity`) are deferred and retried in a later run, never recorded as outcomes.
+  - Real failures (502, 504, 4xx) are recorded once, without client-side retries, because they are reliability data.
+  - A provider lane stops after 3 consecutive deferrals.
+  - Local models get a recorded warm-up call before measurement, and run one after another so they are not reloaded between items.

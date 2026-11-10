@@ -109,16 +109,21 @@ def musique_synthesis_item(row: dict[str, Any]) -> BenchItem:
     )
 
 
-def sufficiency_item(row: dict[str, Any]) -> BenchItem:
-    """MuSiQue-Full answerable/unanswerable pairs act as an evidence-sufficiency proxy."""
-    evidence = "\n\n".join(f"{p['title']}: {p['paragraph_text']}" for p in row["paragraphs"])
-    gold = "sufficient" if row["answerable"] else "insufficient"
+def sufficiency_item(row: dict[str, Any], *, remove_support: bool) -> BenchItem:
+    """An evidence-sufficiency item built from an answerable MuSiQue question.
+
+    With `remove_support`, the supporting paragraphs are dropped and only distractors remain, so the evidence is
+    insufficient. This mirrors how MuSiQue-Full builds its unanswerable contrast questions.
+    """
+    paragraphs = [p for p in row["paragraphs"] if not (remove_support and p.get("is_supporting"))]
+    evidence = "\n\n".join(f"{p['title']}: {p['paragraph_text']}" for p in paragraphs)
+    gold = "insufficient" if remove_support else "sufficient"
     prompt = (
         f"Can this question be answered from the evidence alone?\n\nEvidence:\n{evidence}\n\n"
         f'Question: {row["question"]}\n\nReply with JSON: {{"label": "sufficient"}} or {{"label": "insufficient"}}'
     )
     return BenchItem(
-        item_id=f"musique_suff:{row['id']}",
+        item_id=f"musique_suff:{row['id']}:{'removed' if remove_support else 'full'}",
         source="musique",
         task_type="evidence_assessment",
         messages=[{"role": "user", "content": prompt}],

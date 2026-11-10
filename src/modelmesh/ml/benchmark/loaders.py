@@ -106,11 +106,10 @@ def _build_musique_synth(count: int, rng: random.Random, raw: Path) -> list[Benc
 
 
 def _build_musique_suff(count: int, rng: random.Random, raw: Path) -> list[BenchItem]:
-    rows = _musique("default")
+    """Half the items keep every paragraph; the other half, different questions, lose their supporting ones."""
+    rows = _sample(_musique("answerable"), count, rng)
     half = count // 2
-    positive = _sample([r for r in rows if r["answerable"]], half, rng)
-    negative = _sample([r for r in rows if not r["answerable"]], count - half, rng)
-    return [templates.sufficiency_item(r) for r in [*positive, *negative]]
+    return [templates.sufficiency_item(row, remove_support=position >= half) for position, row in enumerate(rows)]
 
 
 def _build_qasper(count: int, rng: random.Random, raw: Path) -> list[BenchItem]:

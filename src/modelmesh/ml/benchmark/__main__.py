@@ -10,7 +10,6 @@ import argparse
 import asyncio
 import json
 import os
-import statistics
 import sys
 from pathlib import Path
 from typing import Any
@@ -20,7 +19,7 @@ import httpx
 from modelmesh.ml.benchmark.items import manifest_for, read_items, write_items
 from modelmesh.ml.benchmark.loaders import build_items, counts_for
 from modelmesh.ml.benchmark.review import agreement_report, build_review_set, read_jsonl, serve
-from modelmesh.ml.benchmark.runner import JUDGEMENTS, OBSERVATIONS, BenchmarkRunner
+from modelmesh.ml.benchmark.runner import DEFERRALS, JUDGEMENTS, OBSERVATIONS, WARMUPS, BenchmarkRunner, Pacing
 
 DATA_ROOT = Path("data/benchmark")
 RAW_DIR = Path("data/raw")
@@ -58,21 +57,52 @@ def prepare(profile: str, limit: int | None) -> None:
     print(json.dumps({"items": len(items), "counts": realised, "manifest_sha256": manifest["manifest_sha256"]}))
 
 
-async def run(profile: str, run_id: str, models: list[str]) -> None:
+def parse_pacing(specs: list[str], warmup: list[str]) -> dict[str, Pacing]:
+    """`provider=rpm[:max_requests[:timeout_ms]]`; empty fields mean no limit. Warm-up providers run models in turn."""
+    pacing: dict[str, Pacing] = {}
+    for spec in specs:
+        provider, _, values = spec.partition("=")
+        fields = [*values.split(":"), "", ""][:3]
+        pacing[provider] = Pacing(
+            rpm=float(fields[0]) if fields[0] else None,
+            max_requests=int(fields[1]) if fields[1] else None,
+            timeout_ms=int(fields[2]) if fields[2] else None,
+        )
+    for provider in warmup:
+        current = pacing.setdefault(provider, Pacing())
+        current.warmup = True
+        current.sequential_models = True
+    return pacing
+
+
+def lane_summary(runner: BenchmarkRunner) -> dict[str, Any]:
+    return {name: {"sent": lane.sent, "stopped": lane.stopped_reason} for name, lane in runner.lanes.items()}
+
+
+async def run(profile: str, run_id: str, models: list[str], pacing: dict[str, Pacing]) -> None:
     items = read_items(items_path(profile))
     async with client() as http:
         families = await model_families(http)
-        runner = BenchmarkRunner(http, DATA_ROOT / profile / run_id, run_id, families=families)
+        runner = BenchmarkRunner(http, DATA_ROOT / profile / run_id, run_id, families=families, pacing=pacing)
         await runner.collect(items, models)
-    print(json.dumps({"observations": len(runner.observations.read())}))
+    print(json.dumps({"observations": len(runner.observations.read()), "lanes": lane_summary(runner)}))
 
 
-async def judge(profile: str, run_id: str, judges: dict[str, str]) -> None:
+async def judge(profile: str, run_id: str, judges: dict[str, str], pacing: dict[str, Pacing]) -> None:
     items = read_items(items_path(profile))
     async with client() as http:
-        runner = BenchmarkRunner(http, DATA_ROOT / profile / run_id, run_id, families=await model_families(http))
+        families = await model_families(http)
+        runner = BenchmarkRunner(http, DATA_ROOT / profile / run_id, run_id, families=families, pacing=pacing)
         skipped = await runner.judge(items, judges)
-    print(json.dumps({"judgements": len(runner.judgements.read()), "skipped_no_independent_judge": skipped}))
+    print(
+        json.dumps(
+            {
+                "judgements": len(runner.judgements.read()),
+                "skipped_no_independent_judge": skipped,
+                "lanes": lane_summary(runner),
+            }
+        )
+    )
 
 
 def review_sample(profile: str, run_id: str) -> None:
@@ -89,17 +119,35 @@ def review_sample(profile: str, run_id: str) -> None:
     print(json.dumps({"review_items": len(review)}))
 
 
-def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _percentile(values: list[float], q: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    return ordered[min(len(ordered) - 1, round(q * (len(ordered) - 1)))]
+
+
+def _summary(rows: list[dict[str, Any]], deferrals: list[dict[str, Any]]) -> dict[str, Any]:
     ok = [row for row in rows if row["ok"]]
-    latencies = [row["latency_ms"] for row in ok if row["latency_ms"] is not None]
+    latencies = [float(row["latency_ms"]) for row in ok if row["latency_ms"] is not None]
+    errors: dict[str, int] = {}
+    for row in rows:
+        if not row["ok"]:
+            key = f"{row['http_status']}:{row['error_code']}"
+            errors[key] = errors.get(key, 0) + 1
+    deferred: dict[str, int] = {}
+    for row in deferrals:
+        key = f"{row['http_status']}:{row['error_code']}"
+        deferred[key] = deferred.get(key, 0) + 1
     return {
-        "observations": len(rows),
+        "requests": len(rows) + len(deferrals),
         "succeeded": len(ok),
         "failed": len(rows) - len(ok),
+        "errors": errors,
+        "deferred_for_capacity": deferred,
         "prompt_tokens": sum(row["prompt_tokens"] or 0 for row in ok),
         "completion_tokens": sum(row["completion_tokens"] or 0 for row in ok),
-        "estimated_cost_usd": sum(row["estimated_cost_usd"] or 0.0 for row in ok),
-        "latency_p50_ms": statistics.median(latencies) if latencies else None,
+        "latency_p50_ms": _percentile(latencies, 0.5),
+        "latency_p95_ms": _percentile(latencies, 0.95),
         "automatic_accept_rate": _rate(
             [row["automatic_accepted"] for row in ok if row["automatic_accepted"] is not None]
         ),
@@ -113,11 +161,29 @@ def _rate(values: list[bool]) -> float | None:
 def report(profile: str, run_id: str) -> None:
     directory = DATA_ROOT / profile / run_id
     rows = read_jsonl(directory / OBSERVATIONS)
-    models = sorted({row["model"] for row in rows})
-    summary: dict[str, Any] = {model: _summary([row for row in rows if row["model"] == model]) for model in models}
+    deferrals = [row for row in read_jsonl(directory / DEFERRALS) if row["kind"] == "generation"]
+    judgements = read_jsonl(directory / JUDGEMENTS)
+    models = sorted({row["model"] for row in rows} | {row["model"] for row in deferrals})
+    summary: dict[str, Any] = {
+        model: _summary([r for r in rows if r["model"] == model], [d for d in deferrals if d["model"] == model])
+        for model in models
+    }
     review = read_jsonl(directory / "review.jsonl")
     labels = read_jsonl(directory / "labels.jsonl")
-    output = {"per_model": summary, "agreement": agreement_report(review, labels) if labels else None}
+    output = {
+        "per_model": summary,
+        "warmups": read_jsonl(directory / WARMUPS),
+        "judgements": {
+            "total": len(judgements),
+            "scored": sum(1 for row in judgements if row["score"] is not None),
+            "by_judge": {
+                judge: sum(1 for row in judgements if row["judge_model"] == judge)
+                for judge in sorted({row["judge_model"] for row in judgements})
+            },
+            "deferred": sum(1 for row in read_jsonl(directory / DEFERRALS) if row["kind"] == "judge"),
+        },
+        "agreement": agreement_report(review, labels) if labels else None,
+    }
     print(json.dumps(output, indent=1))
 
 
@@ -135,6 +201,8 @@ def main() -> None:
             sub.add_argument("--models", required=True, help="comma-separated model ids")
         else:
             sub.add_argument("--judges", required=True, help="comma-separated family=model pairs")
+        sub.add_argument("--pace", action="append", default=[], help="provider=rpm[:max_requests[:timeout_ms]]")
+        sub.add_argument("--warmup", action="append", default=[], help="provider whose models need a warm-up")
     for name in ("review-sample", "report"):
         sub = commands.add_parser(name)
         sub.add_argument("--profile", choices=["pilot", "full"], default="pilot")
@@ -150,10 +218,10 @@ def main() -> None:
     if args.command == "prepare":
         prepare(args.profile, args.limit)
     elif args.command == "run":
-        asyncio.run(run(args.profile, args.run_id, args.models.split(",")))
+        asyncio.run(run(args.profile, args.run_id, args.models.split(","), parse_pacing(args.pace, args.warmup)))
     elif args.command == "judge":
         judges = dict(pair.split("=", 1) for pair in args.judges.split(","))
-        asyncio.run(judge(args.profile, args.run_id, judges))
+        asyncio.run(judge(args.profile, args.run_id, judges, parse_pacing(args.pace, args.warmup)))
     elif args.command == "review-sample":
         review_sample(args.profile, args.run_id)
     elif args.command == "report":

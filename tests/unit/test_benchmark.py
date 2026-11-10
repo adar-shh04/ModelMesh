@@ -28,7 +28,7 @@ from modelmesh.ml.benchmark.metrics import (
     token_f1,
 )
 from modelmesh.ml.benchmark.review import agreement_report, build_review_set, render_page
-from modelmesh.ml.benchmark.runner import BenchmarkRunner
+from modelmesh.ml.benchmark.runner import BenchmarkRunner, Pacing
 from modelmesh.ml.benchmark.scoring import combined_acceptance, score_automatic
 
 
@@ -201,10 +201,15 @@ def test_musique_templates_use_supporting_paragraphs_only() -> None:
     assert templates.planning_item(MUSIQUE).reference["gold"] == "q1\nq2"
 
 
-def test_sufficiency_item_uses_all_paragraphs() -> None:
-    assert templates.sufficiency_item(MUSIQUE).reference["label"] == "sufficient"
-    assert "distractor" in templates.sufficiency_item(MUSIQUE).messages[0]["content"]
-    assert templates.sufficiency_item(MUSIQUE | {"answerable": False}).reference["label"] == "insufficient"
+def test_sufficiency_items_keep_or_remove_supporting_paragraphs() -> None:
+    full = templates.sufficiency_item(MUSIQUE, remove_support=False)
+    removed = templates.sufficiency_item(MUSIQUE, remove_support=True)
+    assert full.reference["label"] == "sufficient"
+    assert "T1: support" in full.messages[0]["content"]
+    assert removed.reference["label"] == "insufficient"
+    assert "T1: support" not in removed.messages[0]["content"]
+    assert "T2: distractor" in removed.messages[0]["content"]
+    assert full.item_id != removed.item_id
 
 
 def test_qasper_item_handles_unanswerable_and_spans() -> None:
@@ -353,6 +358,7 @@ def completion(content: str, request_id: str = "mmr_1") -> httpx.Response:
             "usage": {"prompt_tokens": 3, "completion_tokens": 2, "source": "provider_reported"},
             "cost": {"estimated_usd": 0.001},
             "latency_ms": {"total": 10},
+            "attempts": [{"outcome": "success"}],
         },
     }
     return httpx.Response(200, json=body, headers={"x-modelmesh-request-id": request_id})
@@ -521,3 +527,161 @@ def test_agreement_report_separates_shown_and_hidden() -> None:
     assert report["prelabel_shown"]["kappa"] == 1.0
     assert report["prelabel_hidden"]["agreement"] == 0.5
     assert report["overall"]["n"] == 4
+
+
+# ---------------------------------------------------------------- pacing, deferrals and warm-up
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.slept: list[float] = []
+
+    def __call__(self) -> float:
+        return self.now
+
+    async def sleep(self, seconds: float) -> None:
+        self.slept.append(seconds)
+        self.now += seconds
+
+
+def paced_runner(handler: Any, tmp_path: Path, **kwargs: Any) -> tuple[BenchmarkRunner, httpx.AsyncClient, FakeClock]:
+    clock = FakeClock()
+    http = httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="http://mesh.test")
+    return BenchmarkRunner(http, tmp_path, "run1", sleep=clock.sleep, clock=clock, **kwargs), http, clock
+
+
+@pytest.mark.anyio
+async def test_rpm_pacing_spaces_requests(tmp_path: Path) -> None:
+    runner, http, clock = paced_runner(lambda r: completion("2"), tmp_path, pacing={"m": Pacing(rpm=6)})
+    await runner.collect([numeric_item("a"), numeric_item("b"), numeric_item("c")], ["m/x"])
+    assert clock.slept == [10.0, 10.0]
+    await http.aclose()
+
+
+@pytest.mark.anyio
+async def test_max_requests_stops_the_lane_and_leaves_items_pending(tmp_path: Path) -> None:
+    runner, http, _ = paced_runner(lambda r: completion("2"), tmp_path, pacing={"m": Pacing(max_requests=2)})
+    items = [numeric_item(name) for name in "abcd"]
+    await runner.collect(items, ["m/x"])
+    assert len(runner.observations.read()) == 2
+    assert runner.lanes["m"].stopped_reason == "max_requests"
+    resumed, http2, _ = paced_runner(lambda r: completion("2"), tmp_path)
+    await resumed.collect(items, ["m/x"])
+    assert sorted(row["item_id"] for row in resumed.observations.read()) == list("abcd")
+    await http.aclose()
+    await http2.aclose()
+
+
+@pytest.mark.anyio
+async def test_capacity_responses_are_deferred_not_recorded(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, json={"error": {"code": "upstream_capacity"}}, headers={"retry-after": "7"})
+
+    runner, http, clock = paced_runner(handler, tmp_path)
+    items = [numeric_item(name) for name in "abcde"]
+    await runner.collect(items, ["m/x"])
+    assert runner.observations.read() == []
+    deferrals = runner.deferrals.read()
+    assert len(deferrals) == 3
+    assert deferrals[0]["error_code"] == "upstream_capacity"
+    assert runner.lanes["m"].stopped_reason == "capacity"
+    assert 7.0 in clock.slept
+    await http.aclose()
+
+
+@pytest.mark.anyio
+async def test_real_failures_are_recorded_once_without_client_retry(tmp_path: Path) -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        error = {"code": "deadline_exceeded", "details": {"attempts": [{"outcome": "upstream_timeout"}]}}
+        return httpx.Response(504, json={"error": error})
+
+    runner, http, _ = paced_runner(handler, tmp_path)
+    await runner.collect([numeric_item("a")], ["m/x"])
+    assert calls == 1
+    row = runner.observations.read()[0]
+    assert (row["ok"], row["http_status"], row["error_code"], row["attempts"]) == (
+        False,
+        504,
+        "deadline_exceeded",
+        ["upstream_timeout"],
+    )
+    await http.aclose()
+
+
+@pytest.mark.anyio
+async def test_providers_are_paced_independently_and_lanes_isolate_capacity(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if json.loads(request.content)["model"].startswith("busy/"):
+            return httpx.Response(429, json={"error": {"code": "rpm"}})
+        return completion("2")
+
+    runner, http, _ = paced_runner(handler, tmp_path)
+    await runner.collect([numeric_item("a"), numeric_item("b")], ["busy/x", "free/y"])
+    assert {row["model"] for row in runner.observations.read()} == {"free/y"}
+    assert runner.lanes["free"].stopped_reason is None
+    await http.aclose()
+
+
+@pytest.mark.anyio
+async def test_warmup_runs_once_per_local_model_and_models_run_in_turn(tmp_path: Path) -> None:
+    sent: list[tuple[str, bool]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        sent.append((body["model"], "bench_item" not in body["metadata"]))
+        return completion("2")
+
+    pacing = {"ollama": Pacing(warmup=True, sequential_models=True, timeout_ms=120_000)}
+    runner, http, _ = paced_runner(handler, tmp_path, pacing=pacing)
+    await runner.collect([numeric_item("a"), numeric_item("b")], ["ollama/one", "ollama/two"])
+    assert sent == [
+        ("ollama/one", True),
+        ("ollama/one", False),
+        ("ollama/one", False),
+        ("ollama/two", True),
+        ("ollama/two", False),
+        ("ollama/two", False),
+    ]
+    assert [row["model"] for row in runner.warmups.read()] == ["ollama/one", "ollama/two"]
+    await http.aclose()
+
+
+@pytest.mark.anyio
+async def test_remote_models_are_interleaved_to_share_a_budget(tmp_path: Path) -> None:
+    order: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        order.append(json.loads(request.content)["model"])
+        return completion("2")
+
+    runner, http, _ = paced_runner(handler, tmp_path, pacing={"or": Pacing(max_requests=2)})
+    await runner.collect([numeric_item("a"), numeric_item("b")], ["or/one", "or/two"])
+    assert order == ["or/one", "or/two"]
+    await http.aclose()
+
+
+@pytest.mark.anyio
+async def test_timeout_is_passed_to_the_gateway(tmp_path: Path) -> None:
+    bodies: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return completion("2")
+
+    runner, http, _ = paced_runner(handler, tmp_path, pacing={"m": Pacing(timeout_ms=90_000)})
+    await runner.collect([numeric_item("a")], ["m/x"])
+    assert bodies[0]["routing"] == {"fallback": "none", "timeout_ms": 90_000}
+    await http.aclose()
+
+
+def test_parse_pacing() -> None:
+    from modelmesh.ml.benchmark.__main__ import parse_pacing
+
+    pacing = parse_pacing(["groq=8:400", "openrouter=10:50:120000", "gemini=8"], ["ollama"])
+    assert (pacing["groq"].rpm, pacing["groq"].max_requests, pacing["groq"].timeout_ms) == (8.0, 400, None)
+    assert pacing["openrouter"].timeout_ms == 120_000
+    assert pacing["gemini"].max_requests is None
+    assert pacing["ollama"].warmup and pacing["ollama"].sequential_models
