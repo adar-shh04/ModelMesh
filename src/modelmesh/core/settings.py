@@ -14,7 +14,8 @@ CONTRACT_RELEASE = "1.0.0"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # Blank values (as in a copied .env.example) mean "use the default", not an empty string.
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore", env_ignore_empty=True)
 
     env: Literal["development", "test", "production"] = Field("development", alias="MODELMESH_ENV")
     log_level: str = Field("INFO", alias="MODELMESH_LOG_LEVEL")

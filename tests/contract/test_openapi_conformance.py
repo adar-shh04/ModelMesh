@@ -47,3 +47,15 @@ def test_input_models_reject_unknown_fields() -> None:
 def test_fake_provider_refused_in_production() -> None:
     with pytest.raises(ValueError, match="production"):
         make_settings(MODELMESH_ENV="production")
+
+
+def test_blank_environment_values_fall_back_to_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    from modelmesh.core.settings import Settings
+
+    monkeypatch.setenv("MODELMESH_ENV", "")
+    monkeypatch.setenv("MODELMESH_DEFAULT_TIMEOUT_MS", "")
+    monkeypatch.setenv("MODELMESH_SEMANTIC_CACHE_ENABLED", "")
+    settings = Settings(_env_file=None)
+    assert settings.env == "development"
+    assert settings.default_timeout_ms == 60_000
+    assert settings.semantic_cache_enabled is True
