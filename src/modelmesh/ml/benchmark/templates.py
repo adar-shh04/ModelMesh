@@ -11,6 +11,9 @@ from modelmesh.ml.benchmark.items import BenchItem
 from modelmesh.ml.benchmark.metrics import gsm8k_gold
 
 CANDIDATE_INTENTS = 10
+# Reasoning models spend output tokens on hidden thinking before any visible answer (seen in the pilot).
+REASONING_HEADROOM = 1024
+LONG_OUTPUT = 1536
 ANSWERS_INSUFFICIENT = "insufficient"
 
 
@@ -46,7 +49,7 @@ def intent_item(source: str, row_id: str, text: str, gold: str, all_labels: list
         label_kind="classification",
         reference={"label": gold},
         response_format=_json_label_format(options),
-        max_tokens=64,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -63,7 +66,7 @@ def rewrite_item(source: str, row_id: str, context: list[str], question: str, go
         messages=[{"role": "user", "content": prompt}],
         label_kind="judge",
         reference={"gold": gold, "rubric": "query_rewriting"},
-        max_tokens=128,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -80,7 +83,7 @@ def planning_item(row: dict[str, Any]) -> BenchItem:
         messages=[{"role": "user", "content": prompt}],
         label_kind="judge",
         reference={"gold": gold, "rubric": "research_planning"},
-        max_tokens=300,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -105,7 +108,7 @@ def musique_synthesis_item(row: dict[str, Any]) -> BenchItem:
             "evidence": evidence,
             "rubric": "faithfulness",
         },
-        max_tokens=200,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -130,7 +133,7 @@ def sufficiency_item(row: dict[str, Any], *, remove_support: bool) -> BenchItem:
         label_kind="support_label",
         reference={"label": gold},
         response_format=_json_label_format(["sufficient", "insufficient"]),
-        max_tokens=64,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -159,7 +162,7 @@ def qasper_items(paper: dict[str, Any], limit_per_paper: int = 2) -> list[BenchI
                 messages=[{"role": "user", "content": _synthesis_prompt(question, evidence)}],
                 label_kind="f1_and_judge",
                 reference={"golds": golds, "evidence": evidence, "rubric": "faithfulness"},
-                max_tokens=300,
+                max_tokens=REASONING_HEADROOM,
             )
         )
     return items
@@ -190,7 +193,7 @@ def scifact_item(claim: dict[str, Any], abstract: dict[str, Any]) -> BenchItem:
         label_kind="support_label",
         reference={"label": gold},
         response_format=_verification_format(),
-        max_tokens=64,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -210,7 +213,7 @@ def attribution_item(row: dict[str, Any]) -> BenchItem:
         label_kind="support_label",
         reference={"label": gold},
         response_format=_json_label_format(["supported", "not_enough_info"]),
-        max_tokens=64,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -225,7 +228,7 @@ def ifeval_item(row: dict[str, Any]) -> BenchItem | None:
         messages=[{"role": "user", "content": row["prompt"]}],
         label_kind="ifeval",
         reference={"instruction_id_list": row["instruction_id_list"], "kwargs": row["kwargs"]},
-        max_tokens=800,
+        max_tokens=LONG_OUTPUT,
     )
 
 
@@ -238,7 +241,7 @@ def gsm8k_item(row_id: str, row: dict[str, Any]) -> BenchItem:
         messages=[{"role": "user", "content": prompt}],
         label_kind="numeric",
         reference={"gold": gsm8k_gold(row["answer"])},
-        max_tokens=400,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -253,7 +256,7 @@ def mmlu_item(row: dict[str, Any]) -> BenchItem:
         messages=[{"role": "user", "content": prompt}],
         label_kind="choice",
         reference={"gold": row["answer"]},
-        max_tokens=400,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -265,7 +268,7 @@ def mt_bench_item(row: dict[str, Any]) -> BenchItem:
         messages=[{"role": "user", "content": row["turns"][0]}],
         label_kind="judge",
         reference={"rubric": "general_helpfulness"},
-        max_tokens=512,
+        max_tokens=REASONING_HEADROOM,
     )
 
 
@@ -282,5 +285,5 @@ def json_schema_item(row: dict[str, Any]) -> BenchItem | None:
         label_kind="schema_valid",
         reference={"schema": schema},
         response_format={"type": "json_schema", "json_schema": {"name": "instance", "schema": schema}},
-        max_tokens=800,
+        max_tokens=LONG_OUTPUT,
     )

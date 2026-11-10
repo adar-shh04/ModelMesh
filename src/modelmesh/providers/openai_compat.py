@@ -256,16 +256,19 @@ class OpenAICompatAdapter:
         message = choice.get("message") or {}
         content = message.get("content")
         tool_calls = message.get("tool_calls") or None
-        if not content and not tool_calls:
+        finish_raw = choice.get("finish_reason")
+        # A reasoning model that spends max_tokens on hidden thinking returns empty content with "length". That is a
+        # real (truncated) answer; only an empty answer that claims to be complete is an upstream failure.
+        if not content and not tool_calls and self._finish(finish_raw) != "length":
             raise ProviderError(
                 ErrorClass.UPSTREAM_UNAVAILABLE,
                 f"{self.provider_id} returned empty content",
                 http_status=200,
                 possibly_billed=True,
             )
-        finish = self._finish(choice.get("finish_reason")) or "stop"
+        finish = self._finish(finish_raw) or "stop"
         return NormalizedChatResponse(
-            content=content if isinstance(content, str) else None,
+            content=content if isinstance(content, str) else ("" if not tool_calls else None),
             tool_calls=cast("list[dict[str, Any]] | None", tool_calls),
             finish_reason="tool_calls" if tool_calls and finish == "stop" else finish,
             usage=self.extract_usage(body),

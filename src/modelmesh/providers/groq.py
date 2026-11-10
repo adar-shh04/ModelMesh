@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from typing import Any, ClassVar
 
 from modelmesh.core.errors import ErrorClass, ProviderError
-from modelmesh.providers.openai_compat import OpenAICompatAdapter
+from modelmesh.providers.openai_compat import OpenAICompatAdapter, error_text
 from modelmesh.providers.types import NormalizedChatRequest, RateLimitObservation, TokenUsage
 
 BASE_URL = "https://api.groq.com/openai/v1"
@@ -71,4 +71,7 @@ class GroqAdapter(OpenAICompatAdapter):
     def classify_status(self, status: int, body: Any, headers: Mapping[str, str]) -> ProviderError:
         if status == 498:  # Flex tier at capacity.
             return ProviderError(ErrorClass.RATE_LIMITED, "groq at capacity (498)", http_status=498)
+        if status == 400 and "json_validate_failed" in error_text(body):
+            # Groq rejects its own output when it does not match the schema; this is a model failure, not ours.
+            return ProviderError(ErrorClass.SCHEMA_VALIDATION_FAILED, "groq output failed its schema", http_status=400)
         return super().classify_status(status, body, headers)

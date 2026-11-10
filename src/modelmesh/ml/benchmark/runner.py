@@ -239,6 +239,7 @@ class BenchmarkRunner:
             "messages": item.messages,
             "temperature": 0,
             "max_tokens": item.max_tokens,
+            "reasoning_effort": "low",
             "cache": {"mode": "off"},
             "routing": routing,
             "metadata": {
@@ -403,7 +404,8 @@ class BenchmarkRunner:
                 "model": judge_model,
                 "messages": prompt.messages,
                 "temperature": 0,
-                "max_tokens": 32,
+                "max_tokens": 1024,
+                "reasoning_effort": "low",
                 "response_format": prompt.response_format,
                 "cache": {"mode": "off"},
                 "routing": routing,

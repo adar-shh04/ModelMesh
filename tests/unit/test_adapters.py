@@ -465,3 +465,22 @@ async def test_list_models_parses_context_windows(client) -> None:
     respx.get(f"{GROQ}/models").mock(return_value=httpx.Response(200, json=body))
     models = await groq(client).list_models()
     assert [(m.id, m.context_window, m.active) for m in models] == [("a", 1000, True), ("b", None, False)]
+
+
+@respx.mock
+async def test_groq_json_validate_failed_is_a_model_output_failure(client) -> None:
+    body = {"error": {"message": "Failed to validate JSON.", "code": "json_validate_failed", "failed_generation": ""}}
+    respx.post(f"{GROQ}/chat/completions").mock(return_value=httpx.Response(400, json=body))
+    with pytest.raises(ProviderError) as excinfo:
+        await groq(client).chat(make_request(), deadline=deadline())
+    assert excinfo.value.error_class == ErrorClass.SCHEMA_VALIDATION_FAILED
+
+
+@pytest.mark.parametrize(("factory", "url"), ADAPTERS)
+@respx.mock
+async def test_reasoning_truncation_returns_empty_length_answer(client, factory, url) -> None:
+    """A reasoning model can spend max_tokens before any visible output. That is a truncated answer, not an outage."""
+    body = {"choices": [{"message": {"content": ""}, "finish_reason": "length"}], "usage": SUCCESS["usage"]}
+    respx.post(url).mock(return_value=httpx.Response(200, json=body))
+    result = await factory(client).chat(make_request(), deadline=deadline())
+    assert (result.content, result.finish_reason) == ("", "length")
