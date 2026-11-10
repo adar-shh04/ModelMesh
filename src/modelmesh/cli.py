@@ -9,7 +9,7 @@ import sys
 
 from modelmesh.auth.admin import AdminService, KeyDefaults
 from modelmesh.auth.keys import KeyAuthenticator
-from modelmesh.core.settings import get_settings
+from modelmesh.core.settings import Settings, get_settings
 from modelmesh.persistence.db import make_engine, make_session_factory
 from modelmesh.providers.catalog import load_catalog
 from modelmesh.providers.registry import build_adapters
@@ -44,9 +44,9 @@ async def _bootstrap(name: str, env: str) -> None:
         await engine.dispose()
 
 
-async def _catalog_verify() -> int:
+async def _catalog_verify(settings: Settings | None = None) -> int:
     """Compare config/models.yaml with each configured provider's /models. Non-zero on drift."""
-    settings = get_settings()
+    settings = settings or get_settings()
     catalog = load_catalog(settings.model_catalog_path)
     adapters = build_adapters(settings)
     problems = 0

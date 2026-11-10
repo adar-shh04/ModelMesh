@@ -13,7 +13,7 @@ from fastapi.openapi.utils import get_openapi
 
 from modelmesh.api.admin import admin_router
 from modelmesh.cli import _catalog_verify
-from modelmesh.core.settings import get_settings
+from modelmesh.core.settings import Settings
 from modelmesh.providers.catalog import load_catalog, load_pricing
 
 REPO = Path(__file__).resolve().parents[2]
@@ -53,17 +53,11 @@ async def test_catalog_verify_reports_drift(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(REPO)
-    monkeypatch.setenv("GROQ_API_KEY", "not-a-real-key")
-    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
-    monkeypatch.setenv("MODELMESH_MODEL_CATALOG_PATH", "config/models.yaml")
-    monkeypatch.setenv("MODELMESH_ENABLE_FAKE_PROVIDER", "false")
-    get_settings.cache_clear()
+    # Never read the developer's real .env here: only the Groq adapter is configured, with a dummy key.
+    settings = Settings(_env_file=None, GROQ_API_KEY="not-a-real-key", MODELMESH_ENABLE_FAKE_PROVIDER=False)
     listed = {"data": [{"id": "openai/gpt-oss-20b", "context_window": 131072, "active": True}]}
     respx.get("https://api.groq.com/openai/v1/models").mock(return_value=httpx.Response(200, json=listed))
-    code = await _catalog_verify()
-    get_settings.cache_clear()
+    code = await _catalog_verify(settings)
     captured = capsys.readouterr().out
     assert code == 1
     assert "groq/openai/gpt-oss-120b: not offered" in captured
