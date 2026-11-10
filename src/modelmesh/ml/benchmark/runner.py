@@ -133,7 +133,8 @@ def retry_delay(response: httpx.Response, attempt: int) -> float:
             return min(float(header), MAX_BACKOFF_S)
         except ValueError:
             pass
-    return min(5.0 * 2.0**attempt, MAX_BACKOFF_S)
+    # Long enough to cross the gateway's per-minute quota window by the last attempt.
+    return min(15.0 * 2.0**attempt, MAX_BACKOFF_S)
 
 
 def error_code_of(response: httpx.Response) -> str | None:
@@ -154,7 +155,7 @@ class BenchmarkRunner:
         *,
         families: dict[str, str] | None = None,
         pacing: dict[str, Pacing] | None = None,
-        capacity_attempts: int = 3,
+        capacity_attempts: int = 4,
         sleep: SleepFn = anyio.sleep,
         clock: ClockFn = time.monotonic,
     ) -> None:
