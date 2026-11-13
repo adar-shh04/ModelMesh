@@ -88,3 +88,27 @@ These resolve the draft's §2.3. The `cache` block itself is unchanged apart fro
 - `redis:8-alpine` was checked: Redis 8.10 with the `search`, `timeseries` and `bf` modules loaded, and `FT.CREATE` with a `VECTOR` field succeeds. The in-process fallback was not needed.
 - Redis 8 is offered under RSALv2, SSPLv1 or AGPLv3 (`LICENSE.txt` in the Redis repository, checked 2026-11-09). It runs unmodified as a separate server, under RSALv2. The product owner has not yet reviewed that reading of D5, so the store stays behind `ResponseCache`.
 - Limits and cache share Redis DB 0. Eviction is not configured on the local stack, so the separation by logical DB in ADR-0010 is deferred; `maxmemory` is not set either.
+
+## Amendment 2026-11-14: Redis licence terms (DECISIONS, coordinator interpretation of D5)
+
+**Status: awaiting product-owner review. Not approved.** This records the check that DECISIONS.md assigns to this ADR. It does not settle the interpretation.
+
+What was checked, on 2026-11-14:
+- **Version in use.** The Compose stack runs `redis:8-alpine`, image created 2026-11-05, which reports `Redis server v=8.10.3`. The image contains no licence file, so the terms were read from the source repository.
+- **Licence at that version.** `LICENSE.txt` at tag `8.10.3` and on the `unstable` branch of `github.com/redis/redis` say the same thing. Code contributed after Redis 7.2 is under the user's choice of RSALv2, SSPLv1 or AGPLv3. Code from 7.2 and earlier stays under BSD-3-Clause (per `REDISCONTRIBUTIONS.txt`). Nothing has changed since the 2026-11-09 check.
+- **RSALv2 limitations that matter here**, as summarised from the agreement text in that file:
+  - You may not make the software available to third parties as a service.
+  - That includes letting third parties interact with it remotely, or offering a product whose value comes mainly from it.
+  - You may not offer a product that serves the software's primary purpose.
+  - You may not alter or remove its licensing, copyright or other notices.
+  - Anyone who receives a copy must also receive the terms.
+
+The coordinator's interpretation, as recorded in DECISIONS.md and not yet reviewed:
+- D5 covers AGPL code combined into or shipped with ModelMesh. ModelMesh does neither with Redis: it talks to a separate, unmodified Redis server over the network, does not bundle or redistribute Redis, and its Python client (`redis-py`) is MIT-licensed. So D5 does not exclude Redis. The project uses Redis under RSALv2.
+- A ModelMesh deployment's value comes from routing, accounting and caching LLM calls. It does not expose Redis's own functionality to third parties. Running ModelMesh, including for other people, is therefore not offering Redis as a service. **This is an interpretation, not legal advice.** The question to confirm is whether a hosted, multi-tenant ModelMesh offered to third parties would still fall outside the RSALv2 service limitation.
+- Self-hosters choose their own Redis licence (RSALv2, SSPLv1 or AGPLv3) and are responsible for complying with it. The README says so.
+
+If the product owner disagrees:
+- The cache and limit stores are behind interfaces (`ResponseCache`, and the Redis-backed limiter and quota tracker), so the server can be replaced. A BSD-licensed fork such as Valkey would be a candidate. It has **not** been evaluated, including whether it supports the vector query used by the semantic cache.
+- Until the review, nothing in the code depends on the outcome.
+
