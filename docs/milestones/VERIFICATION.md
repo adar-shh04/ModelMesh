@@ -95,9 +95,11 @@ Tests: `tests/integration/test_dashboard.py`, 14 tests against real Postgres and
 | Key management | Passed: create shows the secret once (`no-store`) with the D1 default limits; rotate kills the old secret; revoke takes effect; form posts need the CSRF value; a key cannot be revoked through another tenant |
 
 Not verified:
-- **The pages in the running Compose stack, or in a browser,** unless noted below. The tests drive the ASGI app in-process.
+- **A browser.** The tests drive the ASGI app in-process. Nobody has looked at the pages in a browser, including the layout at phone width and the dark theme.
 - Benchmark comparison: not built, because M6 has not produced a report.
 - The login form has no attempt limit, and the session cookie is derived from the admin token, so it lasts until the token changes. Both are acceptable for a local operator page and are not suitable for an exposed deployment.
+
+**Compose stack.** On 2026-11-14 the `api` image was rebuilt with jinja2 and only the `api` container was recreated; it came back healthy. Against the pilot data, every page returned 200 with the admin token and 401 without it. On the usage page grouped by model, all 140 cells (9 models and the total) equalled `GET /v1/usage` for the benchmark key over 2026-11-10 to 2026-11-14 (2,923 requests). A request detail page showed its Jaeger link and no content (the benchmark key has retention off).
 
 **Test isolation.** The integration fixtures `FLUSHDB` the Redis at `TEST_REDIS_URL`, which defaults to `127.0.0.1:56379/0`, the same database the Compose gateway uses for quota counters, budgets, rate limits and the cache. While the pilot gateway was running, the gates were run with `TEST_REDIS_URL=redis://127.0.0.1:56390/0` against a throwaway `redis:8-alpine` container, so that the gateway's state was not wiped.
 
