@@ -67,7 +67,7 @@ For Ollama, run it on the host and set `OLLAMA_BASE_URL=http://host.docker.inter
 
 ```bash
 uv sync --group ml
-docker compose up -d postgres redis
+docker compose --profile test up -d postgres redis-test   # tests use their own Redis on 56390, never the gateway's
 ./scripts/check.sh    # or scripts/check.ps1: ruff, mypy, import-linter and pytest
 ```
 

@@ -20,7 +20,7 @@ jobs:
           --health-cmd "pg_isready -U modelmesh" --health-interval 3s --health-timeout 3s --health-retries 20
       redis:
         image: redis:8-alpine
-        ports: ["56379:6379"]
+        ports: ["56390:6379"]
         options: >-
           --health-cmd "redis-cli ping" --health-interval 3s --health-timeout 3s --health-retries 20
     steps:

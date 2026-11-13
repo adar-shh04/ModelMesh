@@ -45,6 +45,22 @@ services:
       retries: 20
     mem_limit: 320m
 
+  # Throwaway Redis for the test suite, which runs FLUSHDB and recreates the cache's search index.
+  # Keeping it separate means `pytest` never wipes the gateway's rate limits, budgets or cache.
+  # Start with: docker compose --profile test up -d postgres redis-test
+  redis-test:
+    image: redis:8-alpine
+    profiles: ["test"]
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    ports:
+      - "127.0.0.1:${MODELMESH_TEST_REDIS_HOST_PORT:-56390}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    mem_limit: 192m
+
   migrate:
     <<: *app
     command: ["alembic", "upgrade", "head"]

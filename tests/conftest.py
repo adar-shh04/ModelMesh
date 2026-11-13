@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 import jsonschema
@@ -36,7 +37,17 @@ REPO = Path(__file__).resolve().parents[1]
 PG_ADMIN_DSN = os.environ.get("TEST_PG_ADMIN_DSN", "postgresql://modelmesh:modelmesh@127.0.0.1:55432/modelmesh")
 TEST_DB = "modelmesh_test"
 TEST_DB_URL = os.environ.get("TEST_DATABASE_URL", f"postgresql+psycopg://modelmesh:modelmesh@127.0.0.1:55432/{TEST_DB}")
-TEST_REDIS_URL = os.environ.get("TEST_REDIS_URL", "redis://127.0.0.1:56379/0")
+# The suite runs FLUSHDB and recreates the cache's search index, so it gets its own Redis server
+# (compose service `redis-test`). Search indexes are server-wide, so a different db number on the
+# gateway's Redis would not isolate it.
+TEST_REDIS_URL = os.environ.get("TEST_REDIS_URL", "redis://127.0.0.1:56390/0")
+GATEWAY_REDIS_PORT = int(os.environ.get("MODELMESH_REDIS_HOST_PORT", "56379"))
+if urlsplit(TEST_REDIS_URL).port == GATEWAY_REDIS_PORT:
+    pytest.exit(
+        f"TEST_REDIS_URL points at the gateway's Redis (port {GATEWAY_REDIS_PORT}); the tests would wipe its "
+        "rate limits, budgets and cache. Use the redis-test service: docker compose --profile test up -d redis-test",
+        returncode=4,
+    )
 
 CONTRACT = yaml.safe_load((REPO / "docs/contract/openapi-v1.yaml").read_text(encoding="utf-8"))
 TABLES = "tenants, api_keys, requests, attempts, usage_records, request_content, feedback, provider_settings"
