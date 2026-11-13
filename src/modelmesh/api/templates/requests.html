@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tenant_select %}
+{% block title %}Requests{% endblock %}
+{% block content %}
+<h1>Requests</h1>
+<p class="note">Same query as <code>GET /v1/requests</code>, newest first. Prompt and response content is never listed here.</p>
+{% if not tenant_id %}
+<p>No tenants yet.</p>
+{% else %}
+<form method="get" class="filters">
+  {{ tenant_select(tenants, tenant_id) }}
+  <label>Correlation id <input name="correlation_id" value="{{ correlation_id }}"></label>
+  <button type="submit">Show</button>
+</form>
+<div class="scroll">
+<table id="requests">
+<thead><tr><th>Request</th><th>Created</th><th>Status</th><th>HTTP</th><th>Model</th><th>Latency (ms)</th><th>Cost, estimated (USD)</th><th>Application</th><th>Task type</th><th>Correlation id</th><th>Trace</th></tr></thead>
+<tbody>
+{% for row in records %}
+<tr data-group="{{ row.id }}">
+  <td><a href="{{ prefix }}/requests/{{ row.id }}?tenant_id={{ tenant_id }}"><code>{{ row.id }}</code></a></td>
+  <td>{{ row.created_at | show }}</td>
+  <td>{{ row.status }}</td>
+  <td class="num">{{ row.http_status | show }}</td>
+  <td>{{ row.model | show }}</td>
+  <td class="num">{{ row.latency_ms | show }}</td>
+  <td class="num">{{ row.estimated_usd | show('usd') }}</td>
+  <td>{{ row.application | show }}</td>
+  <td>{{ row.task_type | show }}</td>
+  <td>{{ row.correlation_id | show }}</td>
+  <td>{% if row.trace_url %}<a href="{{ row.trace_url }}" rel="noreferrer">Jaeger</a>{% else %}-{% endif %}</td>
+</tr>
+{% else %}
+<tr><td colspan="11">No requests.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% if next_link %}<p><a href="{{ next_link }}">Older requests</a></p>{% endif %}
+{% endif %}
+{% endblock %}

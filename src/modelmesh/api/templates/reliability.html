@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cell, tenant_select %}
+{% block title %}Latency and reliability{% endblock %}
+{% block content %}
+<h1>Latency and reliability</h1>
+<h2>Providers, live</h2>
+<p class="note">Same figures as <code>GET /v1/providers</code>: this process's rolling five-minute window and circuit breakers. No provider is called to build this page.</p>
+<div class="scroll">
+<table id="providers">
+<thead><tr><th>Provider</th>{% for field, label, kind in provider_fields %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+<tbody>
+{% for row in providers %}
+<tr data-group="{{ row.id }}"><td>{{ row.id }}</td>{% for field, label, kind in provider_fields %}{{ cell(row, field, kind) }}{% endfor %}</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<h2>Models, live</h2>
+<div class="scroll">
+<table id="breakers">
+<thead><tr><th>Model</th><th>Provider</th><th>Status</th><th>Breaker</th></tr></thead>
+<tbody>
+{% for row in models %}
+<tr data-group="{{ row.id }}"><td>{{ row.id }}</td><td>{{ row.provider }}</td>{{ cell(row, 'status', 'text') }}{{ cell(row, 'circuit_state', 'text') }}</tr>
+{% else %}
+<tr><td colspan="4">No enabled models.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<h2>Models, recorded</h2>
+{% if not tenant_id %}
+<p>No tenants yet.</p>
+{% else %}
+<p class="note">Same query as <code>GET /v1/usage?group_by=model</code> for the chosen tenant and range. Failure rate is failed / requests.</p>
+<form method="get" class="filters">
+  {{ tenant_select(tenants, tenant_id) }}
+  <label>From <input name="from" value="{{ start }}"></label>
+  <label>To <input name="to" value="{{ end }}"></label>
+  <button type="submit">Show</button>
+</form>
+<div class="scroll">
+<table id="models">
+<thead><tr><th>Model</th>{% for field, label, kind in fields %}<th>{{ label }}</th>{% endfor %}<th>Failure rate</th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr data-group="{{ row.group }}"><td>{{ row.group }}</td>{% for field, label, kind in fields %}{{ cell(row, field, kind) }}{% endfor %}<td class="num">{{ (row.failed / row.requests) | show('ratio') if row.requests else '-' }}</td></tr>
+{% else %}
+<tr><td colspan="{{ fields | length + 2 }}">No requests in this range.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

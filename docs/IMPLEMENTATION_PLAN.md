@@ -1,6 +1,6 @@
 # ModelMesh: implementation plan
 
-Status: **M1 to M4 and the M5 harness are implemented; the M5 pilot has not been run.** Results and what was not verified: `docs/milestones/VERIFICATION.md`. Contract: **1.0, frozen** (Mezvuat CRs in `contract/CR_RESOLUTIONS.md`). Product-owner decisions: `DECISIONS.md`, which overrides this plan where they differ.
+Status: **M1 to M4, the M5 harness and the M7 dashboard (without the benchmark view) are implemented. The M5 P0 pilot is partly collected (`milestones/P0_PILOT_REPORT.md`); P1 waits on the product owner (D2).** Results and what was not verified: `docs/milestones/VERIFICATION.md`. Contract: **1.0, frozen** (Mezvuat CRs in `contract/CR_RESOLUTIONS.md`). Product-owner decisions: `DECISIONS.md`, which overrides this plan where they differ.
 Milestones are listed in dependency order. Each one ends with a short verification note (`docs/milestones/Mn.md`) that records the commands run and their real results. No milestone is claimed as done without executed verification (spec §7).
 
 Spec §6 ModelMesh checklist keys used below:

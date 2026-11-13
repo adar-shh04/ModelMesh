@@ -146,9 +146,18 @@ class AdminService:
                 "status": k.status,
                 "limits": k.limits,
                 "scopes": k.scopes,
+                "data_policy_ceiling": k.data_policy_ceiling,
+                "content_retention": k.content_retention,
+                "created_at": k.created_at,
+                "revoked_at": k.revoked_at,
             }
-            for k in rows
+            for k in sorted(rows, key=lambda key: key.created_at)
         ]
+
+    async def list_tenants(self) -> list[dict[str, Any]]:
+        async with self._sessions() as session:
+            rows = (await session.execute(select(db.Tenant).order_by(db.Tenant.created_at, db.Tenant.id))).scalars()
+            return [{"id": t.id, "name": t.name, "status": t.status, "settings": t.settings} for t in rows]
 
     async def set_provider_enabled(self, provider: str, *, enabled: bool) -> None:
         statement = (

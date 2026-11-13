@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cell, tenant_select %}
+{% block title %}Usage and cost{% endblock %}
+{% block content %}
+<h1>Usage and cost</h1>
+<p class="note">Same query as <code>GET /v1/usage</code>. Estimated and provider-reported figures are kept apart; estimated cost uses list prices and includes failed attempts.</p>
+{% if not tenant_id %}
+<p>No tenants yet.</p>
+{% else %}
+<form method="get" class="filters">
+  {{ tenant_select(tenants, tenant_id) }}
+  <label>From <input name="from" value="{{ start }}"></label>
+  <label>To <input name="to" value="{{ end }}"></label>
+  <label>Group by
+  <select name="group_by">
+  {% for option in group_options %}<option value="{{ option }}"{% if option == group_by %} selected{% endif %}>{{ option }}</option>{% endfor %}
+  </select>
+  </label>
+  <button type="submit">Show</button>
+</form>
+<div class="scroll">
+<table id="usage">
+<thead><tr><th>{{ group_by }}</th>{% for field, label, kind in fields %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+<tbody>
+{% for row in rows %}
+<tr data-group="{{ row.group }}"><td>{{ row.group }}</td>{% for field, label, kind in fields %}{{ cell(row, field, kind) }}{% endfor %}</tr>
+{% else %}
+<tr><td colspan="{{ fields | length + 1 }}">No requests in this range.</td></tr>
+{% endfor %}
+</tbody>
+{% if totals %}
+<tfoot><tr class="total" data-group="__total__"><td>Total</td>{% for field, label, kind in fields %}{{ cell(totals, field, kind) }}{% endfor %}</tr></tfoot>
+{% endif %}
+</table>
+</div>
+{% endif %}
+{% endblock %}

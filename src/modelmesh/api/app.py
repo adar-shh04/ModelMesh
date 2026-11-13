@@ -15,6 +15,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from modelmesh.accounting.retention import retention_loop
 from modelmesh.api.admin import admin_router
+from modelmesh.api.dashboard import install_dashboard
 from modelmesh.api.errors import install_error_handlers
 from modelmesh.api.middleware import RequestIdentityMiddleware
 from modelmesh.api.routes import router
@@ -60,6 +61,7 @@ def create_app(services: Services | None = None, settings: Settings | None = Non
     install_error_handlers(app)
     app.include_router(router)
     app.include_router(admin_router)
+    install_dashboard(app)
     FastAPIInstrumentor.instrument_app(app, tracer_provider=app.state.services.telemetry.tracer_provider)
     app.add_middleware(RequestIdentityMiddleware, max_body_bytes=active_settings.max_body_bytes)
 

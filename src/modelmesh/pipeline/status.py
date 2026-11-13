@@ -25,12 +25,42 @@ def acceptance_criteria(task_type: str) -> str:
     return _ACCEPTANCE_CRITERIA[task_type]
 
 
-async def model_entries(svc: Services, auth: AuthContext) -> list[dict[str, Any]]:
+def provider_entries(svc: Services) -> list[dict[str, Any]]:
+    """Provider health as served by /v1/providers. In-process state only: no provider is called."""
+    data = []
+    for provider in sorted({m.provider for m in svc.registry.catalog.models.values()} | set(svc.registry.adapters)):
+        models = [m.id for m in svc.registry.enabled_models() if m.provider == provider]
+        p50, p95 = svc.stats.latency_percentiles(provider)
+        state = svc.breakers.provider_state(provider, models)
+        if not svc.registry.is_enabled(provider):
+            status = "disabled"
+        elif provider in svc.breakers.misconfigured:
+            status = "misconfigured"
+        elif state == "closed":
+            status = "ok"
+        else:
+            status = "degraded" if models else "down"
+        data.append(
+            {
+                "id": provider,
+                "status": status,
+                "circuit_state": state,
+                "error_rate_5m": svc.stats.error_rate(provider),
+                "p50_latency_ms": p50,
+                "p95_latency_ms": p95,
+                "models_available": len(models),
+            }
+        )
+    return data
+
+
+async def model_entries(svc: Services, auth: AuthContext | None) -> list[dict[str, Any]]:
+    """Catalog entries as served by /v1/models. With no auth context (operator views) no key scope applies."""
     created = int(time.time())
     models = svc.registry.enabled_models()
-    if auth.allowed_providers is not None:
+    if auth is not None and auth.allowed_providers is not None:
         models = [m for m in models if m.provider in auth.allowed_providers]
-    if auth.allowed_models is not None:
+    if auth is not None and auth.allowed_models is not None:
         models = [m for m in models if m.id in auth.allowed_models]
     blocked = await svc.quota.unavailable(models)
     entries: list[dict[str, Any]] = [

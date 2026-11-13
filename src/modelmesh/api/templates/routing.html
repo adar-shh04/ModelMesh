@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Routing policy{% endblock %}
+{% block content %}
+<h1>Routing policy</h1>
+<dl>
+  <dt>Router version</dt><dd>{{ router_version | show }}</dd>
+  <dt>Default policy</dt><dd>{{ default_policy }}</dd>
+  <dt>Policies</dt><dd>{{ policies | join(', ') }}</dd>
+  <dt>Default minimum quality</dt><dd>{{ default_min_quality }} (applies only to calibrated task types)</dd>
+  <dt>Pricing version</dt><dd>{{ pricing_version }}</dd>
+</dl>
+<h2>Task types</h2>
+<p class="note">Uncalibrated task types route by the static rules baseline (B0a) to the tier shown. The learned router replaces this only after M6 and an approved promotion.</p>
+<div class="scroll">
+<table id="tasks">
+<thead><tr><th>Task type</th><th>Rules tier</th><th>Calibrated</th><th>Acceptance criterion</th></tr></thead>
+<tbody>
+{% for task in tasks %}
+<tr data-group="{{ task.task_type }}"><td>{{ task.task_type }}</td><td>{{ task.rules_tier }}</td><td data-field="calibrated">{{ 'yes' if task.calibrated else 'no' }}</td><td>{{ task.acceptance_criterion }}</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<h2>Models</h2>
+<div class="scroll">
+<table id="catalog">
+<thead><tr><th>Model</th><th>Provider</th><th>Family</th><th>Tier</th><th>Data use</th><th>Capabilities</th><th>Input / output (USD per Mtok)</th><th>Free tier</th><th>Status</th></tr></thead>
+<tbody>
+{% for model in models %}
+<tr data-group="{{ model.id }}">
+  <td>{{ model.id }}</td><td>{{ model.provider }}</td><td>{{ model.family | show }}</td><td>{{ model.size_tier }}</td><td>{{ model.data_use | show }}</td>
+  <td>{{ model.capabilities | join(', ') }}</td>
+  <td class="num">{{ model.pricing.input_per_mtok_usd }} / {{ model.pricing.output_per_mtok_usd }}</td>
+  <td>{{ 'yes' if model.pricing.free_tier else 'no' }}</td>
+  <td data-field="status">{{ model.status }}</td>
+</tr>
+{% else %}
+<tr><td colspan="9">No enabled models.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endblock %}

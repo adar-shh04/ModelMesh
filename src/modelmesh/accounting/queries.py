@@ -180,6 +180,17 @@ class AccountingQueries:
         next_cursor = encode_cursor(page[-1][0].id) if len(rows) > limit else None
         return [self._record_json(row) for row in page], next_cursor
 
+    async def trace_ids(self, tenant_id: str, request_ids: list[str]) -> dict[str, str]:
+        """Trace ids for request records, for links to the trace viewer. Records of other tenants are ignored."""
+        if not request_ids:
+            return {}
+        statement = select(db.RequestRecord.id, db.RequestRecord.trace_id).where(
+            db.RequestRecord.tenant_id == tenant_id, db.RequestRecord.id.in_(request_ids)
+        )
+        async with self._sessions() as session:
+            rows = (await session.execute(statement)).all()
+        return {row.id: row.trace_id for row in rows}
+
 
 def encode_cursor(value: str) -> str:
     return base64.urlsafe_b64encode(value.encode()).decode()

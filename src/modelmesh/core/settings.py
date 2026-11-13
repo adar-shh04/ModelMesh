@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     otlp_endpoint: str | None = Field(None, alias="OTEL_EXPORTER_OTLP_ENDPOINT")
     otlp_metrics_enabled: bool = Field(False, alias="MODELMESH_OTLP_METRICS_ENABLED")
     otel_service_name: str = Field("modelmesh", alias="OTEL_SERVICE_NAME")
+    jaeger_ui_url: str = Field("http://127.0.0.1:16686", alias="MODELMESH_JAEGER_UI_URL")
 
     @model_validator(mode="after")
     def _guard_fake_provider(self) -> Self:

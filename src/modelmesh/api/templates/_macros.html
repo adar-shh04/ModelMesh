@@ -1,0 +1,13 @@
+{% macro cell(row, field, kind) -%}
+<td class="{{ 'num' if kind != 'text' else '' }}" data-field="{{ field }}" data-value="{{ row[field] | raw }}">{{ row[field] | show(kind) }}</td>
+{%- endmacro %}
+
+{% macro tenant_select(tenants, tenant_id) -%}
+<label>Tenant
+<select name="tenant_id">
+{% for tenant in tenants %}
+<option value="{{ tenant.id }}"{% if tenant.id == tenant_id %} selected{% endif %}>{{ tenant.name }} ({{ tenant.id }})</option>
+{% endfor %}
+</select>
+</label>
+{%- endmacro %}

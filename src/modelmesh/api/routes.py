@@ -40,7 +40,7 @@ from modelmesh.core.settings import CONTRACT_RELEASE, CONTRACT_VERSION
 from modelmesh.pipeline.chat import ChatPipeline, JsonResult
 from modelmesh.pipeline.prepare import validation_error
 from modelmesh.pipeline.services import Services
-from modelmesh.pipeline.status import acceptance_criteria
+from modelmesh.pipeline.status import acceptance_criteria, provider_entries
 from modelmesh.routing.solver import KNOWN_TASK_TYPES
 
 router = APIRouter(prefix="/v1")
@@ -243,31 +243,7 @@ async def routing_calibration(svc: ServicesDep, auth: AuthDep) -> Any:
 
 @router.get("/providers")
 async def providers_status(svc: ServicesDep, auth: AuthDep) -> Any:
-    data = []
-    for provider in sorted({m.provider for m in svc.registry.catalog.models.values()} | set(svc.registry.adapters)):
-        models = [m.id for m in svc.registry.enabled_models() if m.provider == provider]
-        p50, p95 = svc.stats.latency_percentiles(provider)
-        state = svc.breakers.provider_state(provider, models)
-        if not svc.registry.is_enabled(provider):
-            status = "disabled"
-        elif provider in svc.breakers.misconfigured:
-            status = "misconfigured"
-        elif state == "closed":
-            status = "ok"
-        else:
-            status = "degraded" if models else "down"
-        data.append(
-            {
-                "id": provider,
-                "status": status,
-                "circuit_state": state,
-                "error_rate_5m": svc.stats.error_rate(provider),
-                "p50_latency_ms": p50,
-                "p95_latency_ms": p95,
-                "models_available": len(models),
-            }
-        )
-    return ProviderStatusList.model_validate({"data": data}).to_json()
+    return ProviderStatusList.model_validate({"data": provider_entries(svc)}).to_json()
 
 
 def parse_timestamp(name: str, value: str | None) -> datetime | None:

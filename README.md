@@ -16,10 +16,12 @@ ModelMesh is independent of any one client application. Mezvuat AI is its first 
 | M2 All adapters, reliability, rules-based routing | Done; live-provider tests not run (no API keys yet) |
 | M3 Accounting, API keys, limits, feedback | Done |
 | M4 Exact and semantic caching | Done |
-| M5 Benchmark harness | Harness built. The pilot has not been run |
-| M6 Learned router, M7 dashboard, M8 load tests | Not started |
+| M5 Benchmark harness | Harness built. P0 pilot partly collected (`docs/milestones/P0_PILOT_REPORT.md`) |
+| M6 Learned router | Not started |
+| M7 Dashboard | Done, except the benchmark view, which needs M6 |
+| M8 Load tests | Not started |
 
-No benchmark numbers exist yet. Until a router is trained, `routing.mode` is `rules_fallback` and every task type reports `calibrated: false`. Verification notes for each milestone are in `docs/milestones/`.
+No router has been trained yet. Until one is, `routing.mode` is `rules_fallback` and every task type reports `calibrated: false`. Verification notes for each milestone are in `docs/milestones/`.
 
 ## Quickstart
 
@@ -56,6 +58,8 @@ client.chat.completions.create(
 New keys default to 20 requests per minute, 50,000 tokens per minute and $0.25 of estimated cost per day. Pass `limits` when you create a key to change them.
 
 The contract is `docs/contract/inference-api-v1.md` and `docs/contract/openapi-v1.yaml`. The operator API is `docs/contract/admin-api.yaml`.
+
+The operator dashboard is at `http://localhost:8100/dashboard`. Sign in with `MODELMESH_ADMIN_TOKEN`. It shows usage and cost, latency and reliability, requests with trace links, keys and the routing policy, and it never calls a provider. Keep it on a trusted network: the sign-in form has no attempt limit.
 
 For Ollama, run it on the host and set `OLLAMA_BASE_URL=http://host.docker.internal:11434`. Set `OLLAMA_CONTEXT_LENGTH` on the Ollama server to size the context window.
 

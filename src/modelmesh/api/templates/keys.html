@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tenant_select %}
+{% block title %}Keys{% endblock %}
+{% block content %}
+<h1>API keys</h1>
+{% if issued %}
+<div class="secret">
+  <p>Key <code>{{ issued.id }}</code> {{ issued.action }}. Copy the secret now: it is shown once and is not stored.</p>
+  <p><code id="issued-secret">{{ issued.key }}</code></p>
+</div>
+{% endif %}
+{% if not tenant_id %}
+<p>No tenants yet. Create one through the admin API (<code>POST /admin/v1/tenants</code>).</p>
+{% else %}
+<form method="get" class="filters">
+  {{ tenant_select(tenants, tenant_id) }}
+  <button type="submit">Show</button>
+</form>
+<div class="scroll">
+<table id="keys">
+<thead><tr><th>Key</th><th>Name</th><th>Prefix</th><th>Status</th><th>RPM</th><th>TPM</th><th>Concurrency</th><th>Daily budget (USD)</th><th>Data policy ceiling</th><th>Content retention</th><th>Created</th><th></th></tr></thead>
+<tbody>
+{% for key in keys %}
+<tr data-group="{{ key.id }}">
+  <td><code>{{ key.id }}</code></td>
+  <td>{{ key.name }}</td>
+  <td><code>{{ key.prefix }}</code></td>
+  <td data-field="status">{{ key.status }}</td>
+  <td class="num">{{ key.limits.get('rpm') | show }}</td>
+  <td class="num">{{ key.limits.get('tpm') | show }}</td>
+  <td class="num">{{ key.limits.get('concurrency') | show }}</td>
+  <td class="num">{{ key.limits.get('daily_budget_usd') | show }}</td>
+  <td>{{ key.data_policy_ceiling }}</td>
+  <td>{{ 'on' if key.content_retention else 'off' }}</td>
+  <td>{{ key.created_at | show }}</td>
+  <td>
+  {% if key.status == 'active' %}
+    <form method="post" action="{{ prefix }}/keys/{{ key.id }}/rotate" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="tenant_id" value="{{ tenant_id }}"><button type="submit">Rotate</button></form>
+    <form method="post" action="{{ prefix }}/keys/{{ key.id }}/revoke" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="tenant_id" value="{{ tenant_id }}"><button type="submit">Revoke</button></form>
+  {% endif %}
+  </td>
+</tr>
+{% else %}
+<tr><td colspan="12">No keys.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<h2>New key</h2>
+<p class="note">Uses the default limits for new keys. Change limits, scopes or retention through the admin API.</p>
+<form method="post" action="{{ prefix }}/keys" class="filters">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="tenant_id" value="{{ tenant_id }}">
+  <label>Name <input name="name" maxlength="200" required></label>
+  <label>Environment <select name="env"><option value="live">live</option><option value="test">test</option></select></label>
+  <button type="submit">Create key</button>
+</form>
+{% endif %}
+{% endblock %}

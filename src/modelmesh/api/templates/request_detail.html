@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ record.id }}{% endblock %}
+{% block content %}
+<h1>Request <code>{{ record.id }}</code></h1>
+<p><a href="{{ prefix }}/requests?tenant_id={{ tenant_id }}">All requests</a>{% if summary.trace_url %} &middot; <a href="{{ summary.trace_url }}" rel="noreferrer">Trace in Jaeger</a>{% endif %}</p>
+<dl>
+  <dt>Status</dt><dd>{{ record.status }} (HTTP {{ record.http_status | show }})</dd>
+  <dt>Created</dt><dd>{{ record.created_at | show }}</dd>
+  <dt>Completed</dt><dd>{{ record.completed_at | show }}</dd>
+  <dt>Endpoint</dt><dd>{{ record.endpoint }}{% if record.stream %}, streamed{% endif %}</dd>
+  <dt>API key</dt><dd><code>{{ record.api_key_id }}</code></dd>
+  <dt>Client request id</dt><dd><code>{{ record.client_request_id }}</code></dd>
+  <dt>Model</dt><dd>{{ summary.model | show }}</dd>
+  <dt>Application</dt><dd>{{ summary.application | show }}</dd>
+  <dt>Task type</dt><dd>{{ summary.task_type | show }}</dd>
+  <dt>Correlation id</dt><dd>{{ summary.correlation_id | show }}</dd>
+  <dt>Feedback items</dt><dd>{{ record.feedback_count }}</dd>
+  {% if usage %}<dt>Tokens</dt><dd>{{ usage.prompt_tokens }} prompt, {{ usage.completion_tokens }} completion ({{ usage.source }})</dd>{% endif %}
+  {% if cost %}<dt>Cost</dt><dd>{{ cost.estimated_usd | show('usd') }} estimated; provider-reported {{ cost.provider_reported_usd | show('usd') }}</dd>{% endif %}
+  {% if latency %}<dt>Latency (ms)</dt><dd>total {{ latency.total | show }}, provider {{ latency.provider | show }}, overhead {{ latency.overhead | show }}</dd>{% endif %}
+</dl>
+{% if record.error %}
+<h2>Error</h2>
+<dl>
+  <dt>Type</dt><dd>{{ record.error.get('type') | show }}</dd>
+  <dt>Code</dt><dd>{{ record.error.get('code') | show }}</dd>
+</dl>
+{% endif %}
+<h2>Attempts</h2>
+<div class="scroll">
+<table id="attempts">
+<thead><tr><th>#</th><th>Model</th><th>Outcome</th><th>HTTP</th><th>Latency (ms)</th></tr></thead>
+<tbody>
+{% for attempt in attempts %}
+<tr><td class="num">{{ loop.index }}</td><td>{{ attempt.get('model') | show }}</td><td>{{ attempt.get('outcome') | show }}</td><td class="num">{{ attempt.get('http_status') | show }}</td><td class="num">{{ attempt.get('latency_ms') | show }}</td></tr>
+{% else %}
+<tr><td colspan="5">No upstream attempts.</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<h2>Content</h2>
+{% if content %}
+<p class="note">Retained because the key has content retention on. Expires {{ content.expires_at | show }}.</p>
+<h3>Messages</h3>
+<pre id="content-messages">{{ content.messages | tojson(indent=2) }}</pre>
+<h3>Response</h3>
+<pre id="content-response">{{ content.response | tojson(indent=2) }}</pre>
+{% else %}
+<p class="note" id="no-content">Not retained. Content is stored only for keys with content retention on.</p>
+{% endif %}
+{% endblock %}

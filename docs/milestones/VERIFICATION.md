@@ -79,11 +79,33 @@ The pilot has **not** been run. It needs API keys, and then the product owner's 
 | Loaders against real downloads | 13 of 14 sources produced items. **`musique_suff` is not verified**: downloading the MuSiQue `default` config stalled for over 5 minutes, twice |
 | `prepare --profile pilot` as a whole | **Not completed**, because of the stalled `musique_suff` download |
 
+## M7: minimal dashboard
+
+Server-rendered Jinja2 pages under `/dashboard` (`src/modelmesh/api/dashboard.py`, templates in `src/modelmesh/api/templates/`). No JavaScript and no build step; the pages send a CSP with no script source. Pages: usage and cost, latency and reliability (provider and model breakers), request explorer with Jaeger links (`MODELMESH_JAEGER_UI_URL`), key management (create, rotate, revoke), routing policy, and a benchmark page that says it needs M6.
+
+Tests: `tests/integration/test_dashboard.py`, 14 tests against real Postgres and Redis, recorded 2026-11-14.
+
+| Acceptance test | Result |
+|---|---|
+| Pages render against seeded data | Passed: every page returns 200 with seeded successes, an upstream failure and a rejected request; tenant names are escaped |
+| Every number comes from the same service-layer query as `/v1/usage`, asserted equal | Passed: the usage page uses `AccountingQueries.usage`, and each cell's value equals the `/v1/usage` figure for all five `group_by` values. The reliability page equals `/v1/providers` (now one shared `provider_entries` function), `/v1/usage?group_by=model` and `/v1/models` status |
+| Admin token required | Passed: no token, a wrong token and a tenant API key all get 401 on every page; a forged cookie cannot create a key; with an empty admin token the dashboard answers 503 |
+| No prompt content unless retention is on | Passed: a request from a key without retention shows no content; one from a retention key shows it on its detail page only; the request list never shows content |
+| Never calls a provider | Passed: rendering every page with outbound HTTP transports patched to fail, and with no new scripted-adapter calls |
+| Key management | Passed: create shows the secret once (`no-store`) with the D1 default limits; rotate kills the old secret; revoke takes effect; form posts need the CSRF value; a key cannot be revoked through another tenant |
+
+Not verified:
+- **The pages in the running Compose stack, or in a browser,** unless noted below. The tests drive the ASGI app in-process.
+- Benchmark comparison: not built, because M6 has not produced a report.
+- The login form has no attempt limit, and the session cookie is derived from the admin token, so it lasts until the token changes. Both are acceptable for a local operator page and are not suitable for an exposed deployment.
+
+**Test isolation.** The integration fixtures `FLUSHDB` the Redis at `TEST_REDIS_URL`, which defaults to `127.0.0.1:56379/0`, the same database the Compose gateway uses for quota counters, budgets, rate limits and the cache. While the pilot gateway was running, the gates were run with `TEST_REDIS_URL=redis://127.0.0.1:56390/0` against a throwaway `redis:8-alpine` container, so that the gateway's state was not wiped.
+
 ## Latest gate results
 
 | Gate | Result |
 |---|---|
-| ruff check and format | Clean (94 files) |
-| mypy --strict | Clean (76 source files) |
+| ruff check and format | Clean |
+| mypy --strict | Clean (77 source files) |
 | import-linter | 3 contracts kept |
-| pytest (real Postgres and Redis) | 502 passed, 24 skipped, 0 failed. All 24 skips are live-provider tests, which did **not** run |
+| pytest (real Postgres and Redis) | 531 passed, 24 skipped, 0 failed (2026-11-14). All 24 skips are live-provider tests, which did **not** run |
