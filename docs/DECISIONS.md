@@ -11,7 +11,7 @@ Where an ADR conflicts with this file, update the ADR. Do not reinterpret the de
 | D4 | Data policy | Clients choose per request via `routing.data_policy`. Gemini free tier, Groq and OpenRouter stay classified as may-train or unknown until reviewed. |
 | D5 | AGPL dependencies | Not in ModelMesh. |
 | D6 | Repository licence | MIT. |
-| D7 | Hosting and CI | GitHub with GitHub Actions. Commit locally; push only when the product owner says so. |
+| D7 | Hosting and CI | GitHub with GitHub Actions, public at https://github.com/adar-shh04/ModelMesh (product owner, 2026-11-14: "keep pushing changes"). Agents commit locally; the coordinator pushes `phase-2` after verifying each batch. |
 | D8 | Cloud demo | Not in this phase. Local Docker Compose only. |
 | D9 | Installs and downloads | Approved: uv, Python 3.13 and benchmark datasets. Cache on X:. |
 
