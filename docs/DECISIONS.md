@@ -6,7 +6,7 @@ Where an ADR conflicts with this file, update the ADR. Do not reinterpret the de
 | # | Topic | Decision |
 |---|---|---|
 | D1 | Default per-key limits | 20 RPM, 50K TPM, $0.25/day (estimated cost). |
-| D2 | OpenRouter credit (about $10) | Deferred. Run the pilot on free limits, then the product owner decides. |
+| D2 | OpenRouter credit (about $10) | **Decided 2026-11-14: stay free.** P1 runs on free tiers. No credit is bought. |
 | D3 | Human labelling | LLM pre-labels, the product owner confirms or corrects. |
 | D4 | Data policy | Clients choose per request via `routing.data_policy`. Gemini free tier, Groq and OpenRouter stay classified as may-train or unknown until reviewed. |
 | D5 | AGPL dependencies | Not in ModelMesh. |
@@ -23,6 +23,11 @@ Where an ADR conflicts with this file, update the ADR. Do not reinterpret the de
 
 **D2 — OpenRouter credit**
 - Stop after the M5 pilot and report the yield at free limits, with what the credit would change. Do not assume the credit, and never make the purchase.
+- **Decision after the pilot (2026-11-14): "Start it free".** P1 runs on free tiers only:
+  - The full 1,200-prompt set runs on gemini-3.1-flash-lite, both Groq models and both Ollama models.
+  - The two OpenRouter `:free` models stay on the 280-prompt pilot set: at 50 requests a day, full coverage would take about 48 days. The router report must state their smaller coverage.
+  - gemini-3.6-flash is left out of P1: its free tier yields about 10 answers a day, and the credit would not change that. Its pilot rows are kept.
+  - If the owner later buys credit or enables Gemini billing, these models can be added to P1 without redoing the rest.
 
 **D3 — Labelling**
 - Pre-labels can anchor the reviewer. Measure this: hide the pre-label on a random subset, report the agreement, and document the limitation. Keep the Cohen's kappa gate from ADR-0005.
