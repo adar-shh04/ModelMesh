@@ -36,6 +36,7 @@ from modelmesh.providers.types import (
 from modelmesh.reliability.executor import Candidate, ExecutionState, StreamHandle
 from modelmesh.reliability.structured import emulation_instruction, validate_output
 from modelmesh.routing.estimates import CandidateEstimate
+from modelmesh.routing.learned import shadow_decision
 from modelmesh.routing.solver import SolveInput, solve
 
 logger = logging.getLogger("modelmesh.pipeline")
@@ -80,6 +81,7 @@ class _Routed:
     allow_fallback: bool
     deadline_ms: int
     max_cost_usd: float | None
+    features: dict[str, Any] | None = None  # learned-router features, only when an active router needs them
 
 
 def sse_event(payload: dict[str, Any]) -> bytes:
@@ -91,6 +93,7 @@ class ChatPipeline:
         self._s = services
         self._tracer = services.telemetry.tracer
         self._instruments = services.telemetry.instruments
+        self._shadow_tasks: set[asyncio.Task[None]] = set()
 
     # ------------------------------------------------------------ entry point
     async def handle(self, raw: bytes, auth: AuthContext, ctx: RequestContext) -> JsonResult | StreamResult:
@@ -181,12 +184,16 @@ class ChatPipeline:
             )
             estimated_tokens = self._s.estimator.tokens.estimate_messages(prepared.messages)
             quota_blocked = await self._s.quota.unavailable(pool, estimated_tokens=estimated_tokens)
+            features = None
+            if explicit is None and self._s.router_runtime.active is not None:
+                features = await self._router_features(prepared)
             estimates = [
                 self._s.estimator.estimate(
                     model,
                     messages=prepared.messages,
                     max_tokens=prepared.max_tokens,
                     task_type=prepared.task_type,
+                    features=features,
                 )
                 for model in pool
             ]
@@ -232,6 +239,7 @@ class ChatPipeline:
                 allow_fallback=allow_fallback,
                 deadline_ms=deadline_ms,
                 max_cost_usd=constraints.max_cost_usd,
+                features=features,
             )
             return routed, eligible
 
@@ -410,18 +418,16 @@ class ChatPipeline:
             explicit: str | None = routed.decision["explicit"]
             policy = options.policy if options else "quality_balanced"
             calibrated = self._s.estimator.quality.is_task_calibrated(prepared.task_type)
-            solved = solve(
-                SolveInput(
-                    policy=policy,
-                    task_type=prepared.task_type,
-                    calibrated=calibrated,
-                    explicit_min_quality=options.min_quality if options else None,
-                    max_latency_ms=options.max_latency_ms if options else None,
-                    input_tokens=eligible[0].input_tokens,
-                    schema_properties=prepared.schema_properties,
-                ),
-                eligible,
+            solve_input = SolveInput(
+                policy=policy,
+                task_type=prepared.task_type,
+                calibrated=calibrated,
+                explicit_min_quality=options.min_quality if options else None,
+                max_latency_ms=options.max_latency_ms if options else None,
+                input_tokens=eligible[0].input_tokens,
+                schema_properties=prepared.schema_properties,
             )
+            solved = solve(solve_input, eligible)
             ranked = solved.ranked
             if explicit is not None:
                 ranked = [e for e in eligible if e.model.id == explicit] + [e for e in ranked if e.model.id != explicit]
@@ -431,6 +437,14 @@ class ChatPipeline:
             warnings: list[str] = routed.decision["warnings"]
             warnings.extend(solved.warnings if explicit is None else [])
             mode = "explicit_model" if explicit is not None else solved.mode
+            active = self._s.router_runtime.active
+            if (
+                mode == "learned"
+                and active is not None
+                and routed.features is not None
+                and active.predictions(prepared.task_type, routed.features)[1]
+            ):
+                mode = "rules_fallback"  # low confidence: the B0b lookup supplied the quality estimates
             routed.decision.update(
                 {
                     "mode": mode,
@@ -451,6 +465,42 @@ class ChatPipeline:
             span.set_attribute("mm.routing.policy", policy)
             span.set_attribute("mm.task_type", prepared.task_type)
         self._instruments.router_latency.record((time.perf_counter() - started) * 1000)
+        if explicit is None and self._s.router_runtime.shadow is not None:
+            self._schedule_shadow(prepared, eligible, solve_input, ranked[0].model.id)
+
+    async def _router_features(self, prepared: PreparedRequest) -> dict[str, Any] | None:
+        try:
+            return await self._s.router_runtime.features(
+                prepared.messages,
+                task_type=prepared.task_type,
+                response_format=prepared.response_format,
+                max_tokens=prepared.max_tokens,
+                tool_count=len(prepared.tools or []),
+            )
+        except Exception:  # The embedder failed: the request routes without learned estimates.
+            logger.warning("router features unavailable", exc_info=True)
+            return None
+
+    def _schedule_shadow(
+        self, prepared: PreparedRequest, eligible: list[CandidateEstimate], request: SolveInput, live_choice: str
+    ) -> None:
+        """Computes the shadow router's decision after the live one, off the request path. Never routes."""
+        shadow = self._s.router_runtime.shadow
+        if shadow is None:
+            return
+
+        async def run() -> None:
+            try:
+                features = await self._router_features(prepared)
+                if features is not None:
+                    decision = shadow_decision(shadow, request, features, eligible, live_choice)
+                    logger.info("routing shadow decision", extra={"routing_shadow": decision})
+            except Exception:
+                logger.warning("shadow routing failed", exc_info=True)
+
+        task = asyncio.get_running_loop().create_task(run())
+        self._shadow_tasks.add(task)
+        task.add_done_callback(self._shadow_tasks.discard)
 
     def _build_candidates(
         self, prepared: PreparedRequest, ranked: list[CandidateEstimate], routed: _Routed

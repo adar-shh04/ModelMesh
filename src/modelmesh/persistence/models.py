@@ -162,3 +162,22 @@ class ProviderSetting(Base):
     provider: Mapped[str] = mapped_column(String(32), primary_key=True)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class RouterModel(Base):
+    """Learned-router artifacts and their lifecycle (ADR-0004, ADR-0010): candidate, shadow, active, retired."""
+
+    __tablename__ = "router_models"
+
+    version: Mapped[str] = mapped_column(String(128), primary_key=True)
+    algorithm: Mapped[str] = mapped_column(String(32), nullable=False)
+    artifact_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    dataset_manifest_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    mlflow_run_id: Mapped[str | None] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="candidate", index=True)
+    approved_by: Mapped[str | None] = mapped_column(String(200))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

@@ -23,6 +23,7 @@ from modelmesh.reliability.breaker import BreakerRegistry
 from modelmesh.reliability.executor import Executor
 from modelmesh.reliability.quota import QuotaTracker
 from modelmesh.routing.estimates import Estimator, NoCalibration, QualityPredictor, TokenEstimator
+from modelmesh.routing.learned import RouterRuntime
 
 
 def build_cache(settings: Settings, redis: Redis) -> ResponseCache:
@@ -82,4 +83,8 @@ def build_services(
         records=records,
         cache=cache or build_cache(settings, redis),
         telemetry=built_telemetry,
+        # The embedding model loads on first use, so this costs nothing until a learned router is installed.
+        router_runtime=RouterRuntime(
+            embedder=FastEmbedEmbedder(settings.embedding_model, cache_dir=settings.fastembed_cache_path)
+        ),
     )

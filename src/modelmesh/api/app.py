@@ -24,6 +24,7 @@ from modelmesh.core.settings import Settings, get_settings
 from modelmesh.observability.logging import configure_logging
 from modelmesh.pipeline.bootstrap import build_services
 from modelmesh.pipeline.services import Services
+from modelmesh.routing.lifecycle import RouterModelService
 
 CONTRACT_PATH = Path("docs/contract/openapi-v1.yaml")
 logger = logging.getLogger("modelmesh.api")
@@ -45,6 +46,11 @@ def create_app(services: Services | None = None, settings: Settings | None = Non
             svc.registry.disabled = await admin.disabled_providers()
         except Exception:  # The database may still be starting; /v1/health reports it.
             svc.registry.disabled = set()
+        try:
+            for status, artifact in (await RouterModelService(svc.sessions).runtime_artifacts()).items():
+                svc.install_router(status, artifact)
+        except Exception:  # No router table or database yet: routing stays on the rules baseline.
+            logger.warning("learned router artifacts were not loaded")
         try:
             await svc.cache.prepare()
         except Exception:  # Redis may still be starting; exact and semantic lookups degrade safely.

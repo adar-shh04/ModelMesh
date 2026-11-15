@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from modelmesh.auth.admin import AdminService, KeyDefaults
 from modelmesh.core.errors import ApiError
 from modelmesh.pipeline.services import Services
+from modelmesh.routing.lifecycle import RouterModelService
 
 admin_router = APIRouter(prefix="/admin/v1")
 
@@ -146,3 +147,75 @@ async def set_provider(provider: str, body: ProviderToggle, request: Request, ad
     else:
         svc.registry.disabled.add(provider)
     return {"provider": provider, "enabled": body.enabled}
+
+
+# --------------------------------------------------------------------------- learned router lifecycle (ADR-0004)
+class RouterModelRegister(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    version: Annotated[str, Field(min_length=1, max_length=128)]
+    artifact_uri: Annotated[str, Field(min_length=1, description="Path to the artifact JSON on the server")]
+    metrics: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Offline report summary: preliminary, criterion_passed, ece_calibrated, report path",
+    )
+    mlflow_run_id: str | None = None
+
+
+class RouterPromotion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    approved_by: Annotated[str, Field(min_length=1, max_length=200)]
+    confirm: Literal[True]
+
+
+def _router_models(request: Request, _: AdminDep) -> RouterModelService:
+    svc: Services = request.app.state.services
+    return RouterModelService(svc.sessions)
+
+
+RouterModelsDep = Annotated[RouterModelService, Depends(_router_models)]
+
+
+@admin_router.get("/router-models")
+async def list_router_models(models: RouterModelsDep) -> Any:
+    return {"data": await models.list_models()}
+
+
+@admin_router.post("/router-models", status_code=201)
+async def register_router_model(body: RouterModelRegister, models: RouterModelsDep) -> Any:
+    return await models.register(body.version, body.artifact_uri, body.metrics, body.mlflow_run_id)
+
+
+async def _transition(
+    request: Request, models: RouterModelService, version: str, target: str, approved_by: str | None = None
+) -> Any:
+    svc: Services = request.app.state.services
+    previous = {status: getattr(svc.router_runtime, status) for status in ("active", "shadow")}
+    row, artifact = await models.transition(version, target, approved_by=approved_by)
+    if target in ("active", "shadow"):
+        svc.install_router(target, artifact)
+        if target == "active" and previous["shadow"] and previous["shadow"].router_version == version:
+            svc.install_router("shadow", None)
+    else:
+        for status, predictor in previous.items():
+            if predictor is not None and predictor.router_version == version:
+                svc.install_router(status, None)
+    return row
+
+
+@admin_router.post("/router-models/{version}/shadow")
+async def shadow_router_model(version: str, request: Request, models: RouterModelsDep) -> Any:
+    """Computes and logs this router's decisions next to live traffic. Traffic is not changed."""
+    return await _transition(request, models, version, "shadow")
+
+
+@admin_router.post("/router-models/{version}/promote")
+async def promote_router_model(version: str, body: RouterPromotion, request: Request, models: RouterModelsDep) -> Any:
+    """Human approval to route traffic with this version. Refused unless the offline gate is met."""
+    return await _transition(request, models, version, "active", approved_by=body.approved_by)
+
+
+@admin_router.post("/router-models/{version}/retire")
+async def retire_router_model(version: str, request: Request, models: RouterModelsDep) -> Any:
+    return await _transition(request, models, version, "retired")

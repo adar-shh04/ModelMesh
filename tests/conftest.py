@@ -50,7 +50,9 @@ if urlsplit(TEST_REDIS_URL).port == GATEWAY_REDIS_PORT:
     )
 
 CONTRACT = yaml.safe_load((REPO / "docs/contract/openapi-v1.yaml").read_text(encoding="utf-8"))
-TABLES = "tenants, api_keys, requests, attempts, usage_records, request_content, feedback, provider_settings"
+TABLES = (
+    "tenants, api_keys, requests, attempts, usage_records, request_content, feedback, provider_settings, router_models"
+)
 
 
 def assert_matches(schema_name: str, instance: Any) -> None:

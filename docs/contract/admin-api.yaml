@@ -212,6 +212,124 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/router-models:
+    get:
+      summary: List Router Models
+      operationId: list_router_models_admin_v1_router_models_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response List Router Models Admin V1 Router Models Get
+    post:
+      summary: Register Router Model
+      operationId: register_router_model_admin_v1_router_models_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouterModelRegister'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Register Router Model Admin V1 Router Models Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/router-models/{version}/shadow:
+    post:
+      summary: Shadow Router Model
+      description: Computes and logs this router's decisions next to live traffic.
+        Traffic is not changed.
+      operationId: shadow_router_model_admin_v1_router_models__version__shadow_post
+      parameters:
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Version
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Shadow Router Model Admin V1 Router Models  Version  Shadow
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/router-models/{version}/promote:
+    post:
+      summary: Promote Router Model
+      description: Human approval to route traffic with this version. Refused unless
+        the offline gate is met.
+      operationId: promote_router_model_admin_v1_router_models__version__promote_post
+      parameters:
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouterPromotion'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Promote Router Model Admin V1 Router Models  Version  Promote
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /admin/v1/router-models/{version}/retire:
+    post:
+      summary: Retire Router Model
+      operationId: retire_router_model_admin_v1_router_models__version__retire_post
+      parameters:
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Version
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Retire Router Model Admin V1 Router Models  Version  Retire
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     HTTPValidationError:
@@ -332,6 +450,52 @@ components:
       required:
       - enabled
       title: ProviderToggle
+    RouterModelRegister:
+      properties:
+        version:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Version
+        artifact_uri:
+          type: string
+          minLength: 1
+          title: Artifact Uri
+          description: Path to the artifact JSON on the server
+        metrics:
+          additionalProperties: true
+          type: object
+          title: Metrics
+          description: 'Offline report summary: preliminary, criterion_passed, ece_calibrated,
+            report path'
+        mlflow_run_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mlflow Run Id
+      additionalProperties: false
+      type: object
+      required:
+      - version
+      - artifact_uri
+      title: RouterModelRegister
+    RouterPromotion:
+      properties:
+        approved_by:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Approved By
+        confirm:
+          type: boolean
+          const: true
+          title: Confirm
+      additionalProperties: false
+      type: object
+      required:
+      - approved_by
+      - confirm
+      title: RouterPromotion
     TenantCreate:
       properties:
         name:
