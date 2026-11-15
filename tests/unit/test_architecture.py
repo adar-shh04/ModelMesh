@@ -9,7 +9,8 @@ import sys
 def test_runtime_import_does_not_load_offline_ml_libraries() -> None:
     script = (
         "import sys; import modelmesh.api.app; "
-        "print([m for m in ('sklearn', 'mlflow', 'datasets', 'modelmesh.ml.benchmark') if m in sys.modules])"
+        "print([m for m in ('sklearn', 'mlflow', 'datasets', 'lightgbm', 'scipy', 'modelmesh.ml.benchmark', "
+        "'modelmesh.ml.training', 'modelmesh.ml.evaluation') if m in sys.modules])"
     )
     result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=120, check=True)
     assert result.stdout.strip() == "[]"

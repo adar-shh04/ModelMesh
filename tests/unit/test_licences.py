@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import re
+import tomllib
 from importlib import metadata
+from pathlib import Path
 
+import pytest
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
@@ -21,9 +24,9 @@ PERMISSIVE_OR_WEAK = re.compile(
 VERIFIED_UPSTREAM = {"py-rust-stemmers": "MIT (github.com/qdrant/py-rust-stemmers, checked 2026-11-09)"}
 
 
-def runtime_closure() -> set[str]:
+def closure(roots: list[str]) -> set[str]:
     seen: set[str] = set()
-    pending = ["modelmesh"]
+    pending = list(roots)
     while pending:
         name = canonicalize_name(pending.pop())
         if name in seen:
@@ -40,15 +43,23 @@ def runtime_closure() -> set[str]:
     return seen - {"modelmesh"}
 
 
+def runtime_closure() -> set[str]:
+    return closure(["modelmesh"])
+
+
+def ml_group_closure() -> set[str]:
+    """The offline ML group (training, evaluation, benchmark). Not shipped in the image, but still D5/D6 bound."""
+    groups = tomllib.loads((Path(__file__).parents[2] / "pyproject.toml").read_text(encoding="utf-8"))
+    return closure([Requirement(raw).name for raw in groups["dependency-groups"]["ml"]])
+
+
 def licence_text(name: str) -> str:
     meta = metadata.metadata(name)
     classifiers = " ".join(value for value in meta.get_all("Classifier", []) if value.startswith("License"))
     return " ".join(filter(None, [meta.get("License-Expression"), (meta.get("License") or "")[:300], classifiers]))
 
 
-def test_runtime_dependencies_have_acceptable_licences() -> None:
-    packages = runtime_closure()
-    assert len(packages) > 40
+def licence_problems(packages: set[str]) -> dict[str, str]:
     problems = {}
     for package in sorted(packages):
         text = licence_text(package)
@@ -56,4 +67,19 @@ def test_runtime_dependencies_have_acceptable_licences() -> None:
             problems[package] = text
         elif not PERMISSIVE_OR_WEAK.search(text) and package not in VERIFIED_UPSTREAM:
             problems[package] = f"unrecognised: {text!r}"
+    return problems
+
+
+def test_runtime_dependencies_have_acceptable_licences() -> None:
+    packages = runtime_closure()
+    assert len(packages) > 40
+    problems = licence_problems(packages)
+    assert not problems, problems
+
+
+def test_ml_group_dependencies_have_acceptable_licences() -> None:
+    packages = ml_group_closure()
+    if "lightgbm" not in packages:
+        pytest.skip("the ml dependency group is not installed (uv sync --group ml)")
+    problems = licence_problems(packages)
     assert not problems, problems

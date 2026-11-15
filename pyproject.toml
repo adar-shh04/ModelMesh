@@ -25,6 +25,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.66b2",
     "fastembed>=0.9",
     "jinja2>=3.1.6",
+    "numpy>=2.5",
 ]
 
 [project.scripts]
@@ -42,7 +43,12 @@ dev = [
     "types-jsonschema",
 ]
 load = ["locust>=2.47"]
-ml = ["datasets>=5.1"]
+ml = [
+    "datasets>=5.1",
+    "lightgbm>=4.7.0",
+    "mlflow-skinny>=3.18.0",
+    "scikit-learn>=1.9.1",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -69,6 +75,9 @@ ignore = ["S101"]
 "migrations/**" = ["E501"]
 "src/modelmesh/cli.py" = ["T20"]
 "src/modelmesh/ml/benchmark/__main__.py" = ["T20"]
+# Offline experiments: seeded pseudo-random splits and perturbations are intended.
+"src/modelmesh/ml/training/**" = ["S311"]
+"src/modelmesh/ml/evaluation/**" = ["S311"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -78,7 +87,7 @@ plugins = ["pydantic.mypy"]
 mypy_path = "src"
 
 [[tool.mypy.overrides]]
-module = ["respx.*", "opentelemetry.instrumentation.*", "datasets.*", "fastembed.*"]
+module = ["respx.*", "opentelemetry.instrumentation.*", "datasets.*", "fastembed.*", "sklearn.*", "lightgbm.*", "mlflow.*", "scipy.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -118,4 +127,12 @@ forbidden_modules = ["modelmesh.persistence", "modelmesh.routing", "modelmesh.po
 name = "Online code never imports offline ML or heavy ML libraries"
 type = "forbidden"
 source_modules = ["modelmesh.api", "modelmesh.pipeline", "modelmesh.routing", "modelmesh.auth", "modelmesh.policy", "modelmesh.cache", "modelmesh.reliability", "modelmesh.providers", "modelmesh.accounting"]
-forbidden_modules = ["modelmesh.ml", "sklearn", "mlflow", "datasets"]
+# ADR-0001: routing may use ml.features and ml.artifacts (pure Python and numpy); nothing online imports the
+# offline packages or the libraries they need.
+forbidden_modules = ["modelmesh.ml.training", "modelmesh.ml.evaluation", "modelmesh.ml.benchmark", "modelmesh.ml.cache_calibration", "sklearn", "mlflow", "datasets", "lightgbm", "scipy"]
+
+[[tool.importlinter.contracts]]
+name = "The runtime router artifact code stays free of training code and heavy ML libraries"
+type = "forbidden"
+source_modules = ["modelmesh.ml.features", "modelmesh.ml.artifacts"]
+forbidden_modules = ["modelmesh.ml.training", "modelmesh.ml.evaluation", "modelmesh.ml.benchmark", "sklearn", "mlflow", "datasets", "lightgbm", "scipy", "modelmesh.api", "modelmesh.pipeline", "modelmesh.persistence"]
