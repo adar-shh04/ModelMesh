@@ -103,11 +103,32 @@ Not verified:
 
 **Test isolation.** The integration fixtures `FLUSHDB` the Redis at `TEST_REDIS_URL`, which defaults to `127.0.0.1:56379/0`, the same database the Compose gateway uses for quota counters, budgets, rate limits and the cache. While the pilot gateway was running, the gates were run with `TEST_REDIS_URL=redis://127.0.0.1:56390/0` against a throwaway `redis:8-alpine` container, so that the gateway's state was not wiped.
 
+## M6: router training and evaluation (preliminary, P0 data)
+
+Recorded 2026-11-15. Offline only: no provider was called. Full report: `M6_P0_PRELIMINARY_REPORT.md`, generated from `M6_P0_results.json`.
+
+| Acceptance test | Result |
+|---|---|
+| Synthetic data: the evaluation code recovers a known Oracle and hand-computed AIQ | Passed (`tests/unit/test_router_evaluation.py`; also a kNN router recovers the Oracle on separable synthetic data in `test_router_training.py`) |
+| No group or near-duplicate leakage between splits (asserted) | Passed in unit tests and asserted in the P0 run: 0 groups cross splits, highest cross-split cosine 0.9490 (threshold 0.95) |
+| Test manifest frozen before model selection; test touched once | Partly. The P0 split manifest is written by the run that selects models, from a fixed seed, before selection; it is committed as `data/manifests/p0_router_split.json`. The test set was evaluated twice by identical code (a smoke run, then the reported run). P1 must freeze its own manifest first |
+| Learned vs B0a and B0b on held-out-query and workload-shift splits, paired CIs; ADR-0004 criterion reported | Done. **The criterion does not pass on P0**: learned minus B0b on held-out queries 0.017 [-0.023, 0.070]; on leave-one-dataset-out -0.037 [-0.096, 0.014] |
+| Router p95 overhead under 10 ms excluding embedding, under 25 ms including it | **Half met.** 1.06 ms excluding embedding; 411.9 ms including embedding (fastembed, one thread, i5-11400H) |
+| Shadow mode logs decisions without changing traffic; promotion needs the admin approval call | Unit-tested (shadow decisions never change the live estimates; promotion gate and transitions). The integration test against Postgres was **not run** (Docker stopped) |
+| LightGBM and logistic-regression runtime predictions equal the libraries' own | Passed (`test_router_training.py`) |
+
+Not verified: every Postgres/Redis integration test (Docker stopped), including `test_router_admin.py` and migration `0002_router_models`; the shadow path through a running gateway; the MLflow UI.
+
 ## Latest gate results
+
+2026-11-15, after M6, with Docker Desktop stopped:
 
 | Gate | Result |
 |---|---|
 | ruff check and format | Clean |
-| mypy --strict | Clean (77 source files) |
-| import-linter | 3 contracts kept |
-| pytest (real Postgres and Redis) | 531 passed, 24 skipped, 0 failed (2026-11-14). All 24 skips are live-provider tests, which did **not** run |
+| mypy --strict | Clean (90 source files) |
+| import-linter | 4 contracts kept |
+| pytest without `tests/integration` | 359 passed, 24 skipped (all 24 are live-provider tests, which did **not** run) |
+| pytest `tests/integration` | **Not run**: Postgres and the test Redis were unreachable (203 tests errored or failed on connection; 1 pure test passed) |
+
+The last full run with real Postgres and Redis was 2026-11-14: 531 passed, 24 skipped, 0 failed.

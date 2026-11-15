@@ -158,3 +158,15 @@ The default `Q_min = 0.6` for `cost_optimized` combined with "uncalibrated model
 - **B0a tier selection:** if the chosen tier has no eligible model, the nearest eligible tier is used (larger first). This matters for `local_only`, where only small models exist.
 - In a calibrated task type, a model with no calibrated evidence is left out of the quality comparison and ranked after the models that have evidence.
 - **Latency cold start:** the catalog holds a per-model latency prior, used until telemetry exists, so `max_latency_ms` can be evaluated on a fresh deployment.
+
+## Amendment 2026-11-15 (M6 implementation, preliminary P0 run)
+
+Implementation choices made in M6. They apply to P1 unless the P1 plan changes them before its test manifest is frozen.
+
+- **AIQ convention.** A router's hull is the non-decreasing upper concave hull of its operating points plus the Cheapest-Single point, flat to the right. The cost range is [Cheapest-Single, most expensive single model] on the same items. Single-point baselines (B0a, Best-Single, Oracle) get an AIQ under the same rule.
+- **B0b lookup** is estimated on train plus validation, because P0 validation has 4 to 12 items per task type. This is stricter on the learned router than the validation-only wording above; the validation-only lookup is reported alongside.
+- **Labels.** Recorded failures count as not accepted (a failures-dropped variant is reported). Cells without a recorded observation are never labelled. Failed cells are charged the median successful cost of that model and task type.
+- **Selection** is by validation AIQ of the uncalibrated scores (tie-break: log loss); isotonic tables are then fitted on validation. The learned router falls back to the B0b lookup below the 5th percentile of validation nearest-neighbour similarity, offline as at runtime.
+- **Isotonic regression** is a numpy pool-adjacent-violators implementation, tested equal to scikit-learn's. LightGBM is served from its `dump_model` trees by a numpy evaluator, tested equal to LightGBM's predictions. The runtime needs neither library.
+- **MLflow** uses a local SQLite store on X:, because MLflow 3.18's file store refuses to start without an override.
+- **P0 result:** the primary criterion does not pass (`docs/milestones/M6_P0_PRELIMINARY_REPORT.md`). P0 selection must not be reused on P1.

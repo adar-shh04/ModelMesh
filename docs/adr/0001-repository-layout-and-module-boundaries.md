@@ -78,3 +78,8 @@ modelmesh/                      repo root
 - Contract models live in `modelmesh.contract`, not `modelmesh.api`, because the request pipeline needs them and may not import the API layer.
 - `policy` sits one layer above `routing`, so the policy engine can use candidate estimates without a cycle.
 - The `dashboard` module arrives with M7. `ml.features`, `ml.artifacts`, `ml.training` and `ml.evaluation` arrive with M6.
+
+## Amendment 2026-11-15 (M6)
+
+- The import contract now forbids `ml.training`, `ml.evaluation`, `ml.benchmark` and `ml.cache_calibration` (plus scikit-learn, LightGBM, SciPy, MLflow and datasets) in online code, instead of all of `modelmesh.ml`, so `routing` can use `ml.features` and `ml.artifacts`. A second contract keeps those two packages free of training code, heavy ML libraries, `api`, `pipeline` and `persistence`. numpy is now a declared runtime dependency (it was already present through fastembed).
+- Router lifecycle code lives in `routing.lifecycle` (it needs `persistence`); the admin endpoints are under `/admin/v1/router-models`.

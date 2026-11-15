@@ -1,0 +1,1015 @@
+{
+ "name": "p0-preliminary-2026-11-15",
+ "note": "P0 pilot only. Model selection on this split must not be reused on P1; P1 freezes its own test manifest before any model selection.",
+ "seed": 20261115,
+ "dataset_manifest_sha256": "1c8b1ab9751afbe2edb11a659a7faa5525b8903459578b4510bc223eb1517d47",
+ "near_duplicate_cosine": 0.95,
+ "counts": {
+  "test": 40,
+  "train": 120,
+  "validation": 40
+ },
+ "split_manifest_sha256": "76d073d77bd81eda625651c06161328e1a9861c04a3905fce828fc619b61bed7",
+ "items": [
+  {
+   "item_id": "attribution:AttrScore-GenSearch_7ff042da-862e-4083-b19e-20f1f0a01469",
+   "sha256": "9c1de3f35bbb541bde91efc0dd356f070cab6f04e80b8551efbaf3d946148a91",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:BEGIN_ctrl_wow_c2194cea-6765-4847-87cb-3c1b44a2ccc9",
+   "sha256": "238595e8c103dc07de67d2a41d11adc9f1d261273cc2098b179d6a9c9e0a19c4",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:BEGIN_t5_wow_34777406-76e2-4e1f-9216-6f30ca52783c",
+   "sha256": "dfe33a781585eda3f1de7834ec182f319c447f3eae685369a1d65f93e4db55ad",
+   "split": "test"
+  },
+  {
+   "item_id": "attribution:HAGRID_023eae3b-b721-423b-a716-760be7b4f077",
+   "sha256": "38b14658fe5cc6bf876b029c17b1299b2177215b087f37722952d918dbbfcad2",
+   "split": "validation"
+  },
+  {
+   "item_id": "attribution:HAGRID_03426fb4-2e6d-4075-9973-07f91c8c87ea",
+   "sha256": "86efb1e52e4a620a4bc1f6e124d608ff7336bf9e932deb49f5320fc7776e8f3f",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_03c905bd-ab44-408a-8010-4e41aa863edc",
+   "sha256": "0daec7b298c31449787e151398d436e02a81b4fa1018fabe9448a1a79777eacb",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_19265ed6-a0b8-4b5b-8b05-5e2a406757fc",
+   "sha256": "99418369ccdbeb70c83f2fe96955cfebf6b08cc47493afcb2beec762c0bf80ea",
+   "split": "validation"
+  },
+  {
+   "item_id": "attribution:HAGRID_2e7ee9a6-5f37-40c0-aa09-74337ac4737c",
+   "sha256": "ba2e89078bb4382ef7a094bd4c7a93a39bceeb80f99d671769463a14216def76",
+   "split": "validation"
+  },
+  {
+   "item_id": "attribution:HAGRID_3a83766f-a6a5-4d6a-bba7-3f8ac16e2ca0",
+   "sha256": "75d2512b2e2e01fd7f49570478444e2d6da1cb99b262b466191d12f546b03264",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_573d29c1-02c8-418f-8a1c-9de19b7dfab5",
+   "sha256": "f5101926a596940e4f07cf8f5948ba63fa02b7c1e8848c4159dc9dd7e4f19b7f",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_6c41dcfc-bbd7-47b1-9a99-c6485d1c8bbf",
+   "sha256": "7b686c42451910581f7d794320b4ce0508486e2310c67fcb5f844c3927c94bcd",
+   "split": "validation"
+  },
+  {
+   "item_id": "attribution:HAGRID_71b23a66-df9e-42d4-83a6-1bd699ee0380",
+   "sha256": "699ab683c2917fe14de2708566bb8aa3b90c136eccfc6381477400e7afb883b6",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_afb5af64-0faf-459b-8043-1b5c7909a026",
+   "sha256": "e7c5b2c062cfad1e439f33281c5c8b5e9ae59b4152646df903e8916b208073da",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_b8620a22-065e-4554-912a-1e794dabf194",
+   "sha256": "58835d85c8eef89a6953151b4d0c2d20a2717905be605264a858de2735bc3494",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_b984bf53-1e19-4215-9fb0-16ce4d1fd30a",
+   "sha256": "b07c8212b22091a5b5ed01a389ecc29933df087ecfdfaa0a1734084939b28c94",
+   "split": "test"
+  },
+  {
+   "item_id": "attribution:HAGRID_c69bb7eb-6572-4741-9fa7-1f257b96b370",
+   "sha256": "4110b59cf9fee4c6dd2f2dff7e71d365d8887a0861f5069936e3724e4b422212",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_d4455303-82c7-45b1-8357-cbb32479ca30",
+   "sha256": "e5114cf3e9d52fd5079de3fe4fcb6a381b1b684b749f626a92e65624bfd7fd38",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_d492b472-e354-4352-8ffb-471dafd9b0a8",
+   "sha256": "57b70c191bc3c097ea9eac84d5b58c1196a2b946d3bfe2b2209bb76ae60046e5",
+   "split": "train"
+  },
+  {
+   "item_id": "attribution:HAGRID_ebdf1cec-3f3d-43ea-a5de-a27e9372bd40",
+   "sha256": "c89a13fa25146554f7cc6aad3031f5181ec777aa4b0de07786b519ccb0bcf553",
+   "split": "test"
+  },
+  {
+   "item_id": "attribution:HAGRID_f26448dc-770e-48e2-931d-88c07d517873",
+   "sha256": "315402827d8ecfdbd858c540bc88fd52b9f9fa401a535c58ef0cce7e68f5e886",
+   "split": "test"
+  },
+  {
+   "item_id": "banking77:1384",
+   "sha256": "e9c8331683b450dadb2ed6980b41b9469d18f5847a3a727c084fd7017fd6f359",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:1436",
+   "sha256": "7ced39c8f73af92438101f87e73d7ec37cb176a4838290e31e6df9decd1123e4",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:1512",
+   "sha256": "41a9ee4f2b93b50f9aeb71b2a474786bbf736173d35823845b552c86d312e2ed",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:1538",
+   "sha256": "e071a04551f2850858a966e4604f0b67035423fb1bc4370563a46888aa8f396f",
+   "split": "test"
+  },
+  {
+   "item_id": "banking77:1795",
+   "sha256": "7034d19bb468133564e0c36bf27ed8d575d791777582c86f8b1a01cf0cb9b89b",
+   "split": "test"
+  },
+  {
+   "item_id": "banking77:1963",
+   "sha256": "bba31ae8fa36a482e3ccb4c533fc80a70c147b60efe1eb70936b0dceeb03ea3d",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:2215",
+   "sha256": "9dc1c496fd7f5615ae7605ca015ab1de2fba1e8944c0dc07d2f7db24eea5f1e6",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:2226",
+   "sha256": "29533365dbf6c52556015b683d5ce26814497c066630e063bdd3e0b8a6433e4c",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:2251",
+   "sha256": "8d2bdc909635270382691fb00f8c67b43822e4192d47dee8f211dc755f74babe",
+   "split": "test"
+  },
+  {
+   "item_id": "banking77:2303",
+   "sha256": "b1588cfc7a20e66ae1df27a478c5ec26d7864c02fac5bc22f9d0fd343b4afd7f",
+   "split": "validation"
+  },
+  {
+   "item_id": "banking77:25",
+   "sha256": "138221d105ea69976cd7f4e05911524c4c8431e5f6d26909a0c8a25718e96762",
+   "split": "validation"
+  },
+  {
+   "item_id": "banking77:252",
+   "sha256": "a04fc5164e2fe7737e7ec881d1b318a9731ecf50221312e528aa4dd1c40e9da1",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:2721",
+   "sha256": "6ae90f01143a113f234a2b386cab0df1c6db4cc65bb5b7967743bef13c1387dd",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:2901",
+   "sha256": "f62c0269ce91f1a9bd748ef0fc6679e1f5df57bc203ebae818474d6da01119bb",
+   "split": "validation"
+  },
+  {
+   "item_id": "banking77:302",
+   "sha256": "3a0488de346ccea3c8fdab3cfa4f3dbc1ae68cd9c8878fafea5ec0a94596bb40",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:491",
+   "sha256": "b89bdc96b19bad4ad7c8ca256e2c1470e43351a9ef83db65755cb77343fb9bec",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:597",
+   "sha256": "201fa89486007d1fef5209bbbab05e7752c5d1e107ad78016b9f8fcb696924f6",
+   "split": "test"
+  },
+  {
+   "item_id": "banking77:641",
+   "sha256": "6519c38816548998464df8903002fd8e2be1a13fdc698eca352981b7b964f5e6",
+   "split": "validation"
+  },
+  {
+   "item_id": "banking77:791",
+   "sha256": "33e0e92737b858b5c2ccec114e4fdeda06631caa806ef858547c9648ade5613c",
+   "split": "train"
+  },
+  {
+   "item_id": "banking77:973",
+   "sha256": "ea93d2085f816914e043a37a0b8076be9501fde8d98df7c5ee3c1754669615a2",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:10",
+   "sha256": "3b22b094b0e99c067a765f64015d2531c20e6b813df142790a1b2c5ed8cfc601",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:1510",
+   "sha256": "42a7bb7ce3c6c2fa51323e7d6dc5febfc7890c8e869daeab85e4b5314d186a26",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:1535",
+   "sha256": "c8d503526a70995b82179aae5173e02c3907c01a5c1d514f67e185fb085360b1",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:1697",
+   "sha256": "526a1cc2e5a118fc60d4d52934e98241eb3e0049149ccf5d82433b1d3fe6f344",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:1828",
+   "sha256": "d02e67db1ac62ec111f1265888f80c0a05a1c9fc6bd062a029fb4c04880fb924",
+   "split": "validation"
+  },
+  {
+   "item_id": "clinc150:2391",
+   "sha256": "ef127cdf7dd6e6efd96c682aa6ad11bcdd3f6dabb03d0a433bbecac60d8fb478",
+   "split": "test"
+  },
+  {
+   "item_id": "clinc150:2759",
+   "sha256": "606833543a1b24ffa1b227c000814f1a97ddac71c0fda9e3122c59b1c6ec7928",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:327",
+   "sha256": "b9628e933d8cfec4129678b45faa419af2b85056a3f46d927b0601c2ef0577c6",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:3562",
+   "sha256": "1b28d411c1eea10e1299e44ec302ec16f8464a4186e4a0d11a02c9282a05ffcd",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:392",
+   "sha256": "a9f54ecb3345c918c411ba62c0d9d12ec47a3df2415c3fff3bbe2539ea57e45b",
+   "split": "validation"
+  },
+  {
+   "item_id": "clinc150:4062",
+   "sha256": "155cb108c3b615c081654181109781a759afc7609cdb487efed21a0dd3ebdad9",
+   "split": "test"
+  },
+  {
+   "item_id": "clinc150:4117",
+   "sha256": "57b57364dcff9b0393afc17204fa9ec5c59a6ce075e21fb9c4d6479284a44a09",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:4140",
+   "sha256": "35006c2ec0c8813e2b1d1303978783eddd5d98f624d8253e20c2a5e31d3f84aa",
+   "split": "validation"
+  },
+  {
+   "item_id": "clinc150:4304",
+   "sha256": "0ed6b57cfee2d84154a30e7a67c9bf237f9b11c331584a6c43ceca8aa5e8e93f",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:718",
+   "sha256": "945c7367e86a354fae96b9189eda706dfe49a065ac2cbb70195ba732823418e1",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:805",
+   "sha256": "e953648e2f411db8e030515b8012ded6b89434c8ac2bb13995b184d01bb9f5e4",
+   "split": "test"
+  },
+  {
+   "item_id": "clinc150:809",
+   "sha256": "06efa04ea4360d261960c1eb20afb1cbd342264b9604922c4a55ac2939f2448e",
+   "split": "validation"
+  },
+  {
+   "item_id": "clinc150:882",
+   "sha256": "20676fb9d3c0366595683013cc767d8c323e11ff0af0370642b6af75a871eb4d",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:893",
+   "sha256": "7edcefe2676cf126c37ed9e51b689a1b4b48ed14c3d7ff632bd24856f1e721f6",
+   "split": "train"
+  },
+  {
+   "item_id": "clinc150:999",
+   "sha256": "a3898bc28cb8972f3997d70329d9d2c7444bb72121e7ad8a8c00055f9c9aa205",
+   "split": "test"
+  },
+  {
+   "item_id": "gsm8k:1077",
+   "sha256": "fffd0224f010407ee39621328821508d21500c404f7eb97139dd9f60a37144a5",
+   "split": "test"
+  },
+  {
+   "item_id": "gsm8k:1083",
+   "sha256": "fe63fea30a012eabef3bf908de85548b97f4d17a3369abd18ce20ab16aaea48c",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:1115",
+   "sha256": "d989f54e62b1d6da7382af448051af41fe88cf27c1ad4fe0cb649add783da08c",
+   "split": "test"
+  },
+  {
+   "item_id": "gsm8k:1163",
+   "sha256": "a88cfd020e0bf1bc545e8d25b579e5eb7424bf0021c8435d0ce9aa417f0bf0ad",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:1239",
+   "sha256": "1ed60e77eb3bd4661f450e5f36da6b7569e37e654798852a7cad211ea45e3eed",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:178",
+   "sha256": "7a8ed5f43635b7d4519e2da5bc4f59a4d56aa23c30e5cdcfa29d41de9df1eb49",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:215",
+   "sha256": "3758e0232e0ab1a299a9d85813fa72f489962bbe04ebdaeb97a90aeca5d4e76c",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:343",
+   "sha256": "8ff227f79bdd12ca5cfaed49ed5310c3839ffe7176a3bfe96cc2d5d566c7c639",
+   "split": "validation"
+  },
+  {
+   "item_id": "gsm8k:382",
+   "sha256": "92273f993a23429443f98090279889f2ba2cba1e79632fd3ac2742bb1db7c8f6",
+   "split": "test"
+  },
+  {
+   "item_id": "gsm8k:410",
+   "sha256": "4dd4843d3a76253202f7efcd29d456d773d4c5f16d3581d89ab8955586fdb2a5",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:516",
+   "sha256": "f7e2fc9b282bee2f7b4750081fb7de70116b2f46ea596d29f999dd7017cc16cb",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:619",
+   "sha256": "09ad6b25a5c58109ab1aa3bcc53630733c98b6f61bce210cdf2b9eab524e17c5",
+   "split": "validation"
+  },
+  {
+   "item_id": "gsm8k:620",
+   "sha256": "bd87552d0e574c2016b515611bd54119a45bd8cd222b01469dcd2a785c0ad80d",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:694",
+   "sha256": "a2fc127ca2e6aca0c8ae20ae5ab91aa278ff2356670d90a0ca92de697d549c50",
+   "split": "validation"
+  },
+  {
+   "item_id": "gsm8k:77",
+   "sha256": "33388fb9d403bc472daa01ef83d2ef4b4678c1606eb2b07d13043731dc895679",
+   "split": "validation"
+  },
+  {
+   "item_id": "gsm8k:829",
+   "sha256": "b8e9235bcf0d039acf9166ae6f4f8d33c4845d0869f3892d70437081e01ff9bf",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:902",
+   "sha256": "87a476f13e3002a9c53190716bf8fa8a72146466c4cb7dfe6c61a395a91d7647",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:932",
+   "sha256": "cb1583fe71d92444c85649fb12dd4657896c51fafbe31a51d87b592b9701a880",
+   "split": "test"
+  },
+  {
+   "item_id": "gsm8k:955",
+   "sha256": "f87a022da9a0e4b51a30c29f897eb1754ed35e7295dd1562e4f34772b2da7431",
+   "split": "train"
+  },
+  {
+   "item_id": "gsm8k:97",
+   "sha256": "cc7a735f538fd1b70142bc61f3d0cc35af2298e2deecacd04368d711ff6c7795",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:1137",
+   "sha256": "e3d6ce8b4b95c56b13fac5abcd3226f97ea8f0742147e1655905ca8a45b9fbdf",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:1220",
+   "sha256": "e4a9db1d99c58e078fcc264ec1cf2ef8dd72be88139b314a1f4ee0f8400c1d68",
+   "split": "validation"
+  },
+  {
+   "item_id": "ifeval:16",
+   "sha256": "0bec38f6b2ec8e30195a69a650544a8880a0fc6758561f5f15979a1743771e22",
+   "split": "test"
+  },
+  {
+   "item_id": "ifeval:1667",
+   "sha256": "6856101752b542111a4e6987799795e3347dd97bc4a646c5daeab54fcc213330",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:2404",
+   "sha256": "93b6e0b6e8bf07d008833ff8231417cfe896a2b88a1dc95538fd08d102eaf2ef",
+   "split": "test"
+  },
+  {
+   "item_id": "ifeval:2436",
+   "sha256": "55c8b30f6f47ca3912c493b6aa435b0ed3d5c343a2a680dba9321707cd6a03ff",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:2457",
+   "sha256": "015a8f31a24a6ce27f089a315d3317b10f6e5ea000d6301310e5dd0969c9b4be",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:2485",
+   "sha256": "512f4a9ef37a325ce89784ecf352e66b5df771618c7fa62c6895cd226f0c8bad",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:251",
+   "sha256": "8272cef99593d49cf3abbf40e9c887fa329c3a557cb46911911952de74b0e292",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:2585",
+   "sha256": "802430164d61b8621d9924cb0def9867a1c1a46d2d04c5848f8122ed968a4161",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:2674",
+   "sha256": "3814ba0e7ae7f615e5d2fa4355f329d89d6fd8be7ded3fc9d19ac93dad092bdf",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:2780",
+   "sha256": "19c62154361fdede18b94e4744bf71912092414ee80f889d5f6c0ba641fd6549",
+   "split": "validation"
+  },
+  {
+   "item_id": "ifeval:2887",
+   "sha256": "36eb7f872e6faee47defcce89d70c36c446ae5cc3ab2ae0bd61b813e53bb165d",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:296",
+   "sha256": "c2fe372ea6d8fa8f76a7915e260173a6451e336a4f45d03081941ea4492d767a",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:3188",
+   "sha256": "3a4c802d56612f81b2c51c3e7712245cb5f53fb2ac67d217a588b0cc28009c11",
+   "split": "validation"
+  },
+  {
+   "item_id": "ifeval:3221",
+   "sha256": "15cb1c5e5d53048b85cea95de6ffcd74d3c43f19ecf48cb709be7ff4d74fed85",
+   "split": "validation"
+  },
+  {
+   "item_id": "ifeval:3329",
+   "sha256": "431a0349dcc5f017c456c1f0d498b5dedf37ad051eed0d779327a982c6c269b3",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:3415",
+   "sha256": "240180ab638627674672f06c65f7f86491a616cccaf9ea80cfc1834d89553d52",
+   "split": "train"
+  },
+  {
+   "item_id": "ifeval:3595",
+   "sha256": "65ce460a4cf7c72c4a15836e177f88c92f71aa25fe1526cafbf1486d8c4413c0",
+   "split": "test"
+  },
+  {
+   "item_id": "ifeval:3615",
+   "sha256": "71f40b84497ab243ea5fb7ae4a6c3e60a1d8ed514490d4ab7f0e5cebbc507589",
+   "split": "test"
+  },
+  {
+   "item_id": "mmlu_pro:10295",
+   "sha256": "1709e017a6636dacbbf3568e4e8eb6132d6c4f3c80e88b23e05b778d1787b5b9",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:10663",
+   "sha256": "ed3f4f7e05b1e34c7389263ea4519a0adcee621517da4035d1a02ef400a57efe",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:11017",
+   "sha256": "479b176263d96364e9463aeae58668c4616627b1cb54f7e053ceb0dab0712aff",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:11161",
+   "sha256": "f1e5c60586f6c1513dd0f327b9568bb2aba66db4f8faf0e0e9aa9af78bb64e26",
+   "split": "test"
+  },
+  {
+   "item_id": "mmlu_pro:1173",
+   "sha256": "9e2b64e04878e75f07cb32b4612cd83b9eaa7b023d554c9fc7b32ec869f984bd",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:11819",
+   "sha256": "705c2784186dbb59f8f69d9eae19230bf2bdc062107ea943c541d8ddebad6c3e",
+   "split": "validation"
+  },
+  {
+   "item_id": "mmlu_pro:1403",
+   "sha256": "ceb18979057e94b6f55dde2b77a97b77df4e415cdda7a403f71f3558d638f606",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:1557",
+   "sha256": "84a3d34b2d5ff82a55bdc73e09b38ac71670a21450a1a6d4b70ccc979ee036cd",
+   "split": "test"
+  },
+  {
+   "item_id": "mmlu_pro:258",
+   "sha256": "9b6dcfd6dd619936295285cf04c43cc2fe9da7d7d22957a3ad961bd79559a16f",
+   "split": "test"
+  },
+  {
+   "item_id": "mmlu_pro:3039",
+   "sha256": "a0fcd48ab4e9c2bdfa90f8aaa4cdaf8782143fbb3a4454870879970f9c1a2754",
+   "split": "test"
+  },
+  {
+   "item_id": "mmlu_pro:3405",
+   "sha256": "2e1dbd336a9fe0885d467e96716eff47420f35429c8d3c1c3ed25f1880de0dbb",
+   "split": "validation"
+  },
+  {
+   "item_id": "mmlu_pro:4138",
+   "sha256": "c9132b036a65ad00e735a9acb217b8efd302e7df64ac51f9279d0ded195c389c",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:548",
+   "sha256": "4ace37181350313c2824eac392d53a5920fd8a5dbc3cf391c350ba8d57fa48a1",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:5679",
+   "sha256": "06c421d758c5f8482a28a6a9ce0bc78291814ee7d54e5b11732e682e04ee59be",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:6295",
+   "sha256": "af54f6bc7ad278f6a1d620e0a16de2ab341a84cc1941083ad76e110598420956",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:7353",
+   "sha256": "ab2da5f9f454cc1352fc4ab443f42d528869cd163cb8140f940d4cb041fa5062",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:8012",
+   "sha256": "b8cd4a1b55f448dae6f9f15d16464ec4bbbd4b7de1de990aee863e74e854b654",
+   "split": "validation"
+  },
+  {
+   "item_id": "mmlu_pro:8063",
+   "sha256": "53bc31c2856d2c9b6e72625c5ba375020010ba39f57c426451e4a79229942891",
+   "split": "validation"
+  },
+  {
+   "item_id": "mmlu_pro:8375",
+   "sha256": "ba57abc33c4572f327b8684612c8fa4773549f289da740ab2dc0dbff7b562a6c",
+   "split": "train"
+  },
+  {
+   "item_id": "mmlu_pro:8655",
+   "sha256": "1102884dcae8b9d9add66fe1490ad2044e565db2a02db06efb2a158a17500748",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:2hop__129721_40482:removed",
+   "sha256": "937de3234c355d57e86b1646ace2a737f9f0043b3d55755aa3933df73af98feb",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:2hop__153009_44880:removed",
+   "sha256": "e2aa40f8e0cb6e9729217f16871860ed9aa2053fc62ad1842ebbb8caefd230d3",
+   "split": "validation"
+  },
+  {
+   "item_id": "musique_suff:2hop__175168_110222:full",
+   "sha256": "9af56d58c6984f83aa1ecc4a092019a82ea8e450025ea1a7129947694aa1b53e",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:2hop__179149_396277:removed",
+   "sha256": "154c99e058abdee09060fe9f97fe3558570df206276a3c162f2f8adccd39b2a6",
+   "split": "validation"
+  },
+  {
+   "item_id": "musique_suff:2hop__20059_236755:full",
+   "sha256": "e374e0c2e966a73b4725e7ea570435a5b28a5c557c4712bedc027300229618bb",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:2hop__30384_30351:full",
+   "sha256": "99889a9f399cf5296150ba02c878ed1ad4a1e4195fa45a204674729163ddbaa4",
+   "split": "test"
+  },
+  {
+   "item_id": "musique_suff:2hop__310112_88165:full",
+   "sha256": "67c44b303d2c50e1df1402d61d2b3c1bc587ad0fced28cc88ae922d6d3868328",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:2hop__53147_7298:full",
+   "sha256": "2eb214063c8e53a1527f8199767ba2823a685d7dbd8b80b788f1eeffd6168664",
+   "split": "validation"
+  },
+  {
+   "item_id": "musique_suff:2hop__678516_179720:full",
+   "sha256": "fd233a502319e9142cdb28799da97201aa02caf1d2695e8fcd17ec4b7bb6078d",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:2hop__753260_71701:full",
+   "sha256": "27ab3132a952f7878565aeeb72c0b5317586880e6a6c72b069e87932cb70e1b0",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:2hop__81379_84616:full",
+   "sha256": "ae2192bb7f82872a631c777ef8aa06fa52dd41b56b18d513a162ea70d10f6cb2",
+   "split": "test"
+  },
+  {
+   "item_id": "musique_suff:2hop__815205_590407:removed",
+   "sha256": "e973180ebaa1fe2b20244b10e29222388f64388d4d38f0ecae8f4803559d12fa",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:3hop1__106042_64399_62676:removed",
+   "sha256": "d8926f5fe1947d44593e07c0423bb021473e52da095e047745bf7213932ab2e0",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:3hop1__140345_2053_52946:removed",
+   "sha256": "469e2a8259d3289063f83c62f5cbd0797d6911f56137f8086cb11cd3b4b93d9c",
+   "split": "test"
+  },
+  {
+   "item_id": "musique_suff:3hop1__278222_42197_18397:removed",
+   "sha256": "f4148c6fa2ddc2ef67c4559c18e61f927c4183bee1e836d488619b39e13c04d2",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:3hop2__132957_595371_40768:removed",
+   "sha256": "5e04b698426944c5d9040c7cf26b5dcaae8c24424f24949d395a45f83b05a44f",
+   "split": "test"
+  },
+  {
+   "item_id": "musique_suff:3hop2__304722_796034_63959:full",
+   "sha256": "40dde60fbf10a344025338ffaaf89619d1221f89ba7ce1583286de359bea411e",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:4hop1__525129_315334_131926_87157:removed",
+   "sha256": "b0a51c7563a6145fec7121eb0e23db40b0cd72ea7949c0fe03c12a72285b092c",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:4hop2__9988_158985_70784_61381:full",
+   "sha256": "5aeaea506ca58318f6a21cd71cbca88bd178b0523c36efc762d9c34e4b5cc453",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_suff:4hop3__860588_88460_30152_20999:removed",
+   "sha256": "ea241ebf6081abb005238add8b5eb9bf9f504b61edb93a0e17249352b87d508a",
+   "split": "validation"
+  },
+  {
+   "item_id": "musique_synth:2hop__144763_599630",
+   "sha256": "68d0ff725fc08ae68746947d29dd8bc3cd4be97085a2c0d676567ce55bfd9e30",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:2hop__159215_779396",
+   "sha256": "9d9605bbda7e5ec4525ba038abe818f6e8d647c362994f39a67f5ceb21aeaacd",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:2hop__17854_17873",
+   "sha256": "de00244d1390fdfcfa9953d2a1feac237af33433f16ed03f5e061c585908d669",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:2hop__34734_92852",
+   "sha256": "c447fc796b24d456d175d47042e4e22cd06350ddc57c56218f6d2dc627af8ced",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:2hop__39063_593388",
+   "sha256": "8d27feca52b25d2c95e7c538dd6773135a72ad216fa6a770e0b3ff94010e1f48",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:2hop__499577_617190",
+   "sha256": "22e384881d4467790f729e6eaa6445e021762707b87f4895d02d3dd6cc0674ec",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:2hop__61714_52026",
+   "sha256": "a49e44817c6309e2a44286174f94fa773e8bb5e7f08e0e57fce5afaeed1c31eb",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:2hop__63982_768138",
+   "sha256": "400bdcda0afb07b9c6b0a454862cae6e96aa0253acb0de3c4df27df71042abdd",
+   "split": "test"
+  },
+  {
+   "item_id": "musique_synth:2hop__73760_712629",
+   "sha256": "35c6116bb1867e5c2dd3a449a17f0e573df0020d1bf2f7cc2bcb925d8d67b833",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:2hop__818692_113442",
+   "sha256": "bcac1012ef055a1b91abba3b29264ed99521a3b6760cac4e5e0cf85e6bec5e93",
+   "split": "validation"
+  },
+  {
+   "item_id": "musique_synth:2hop__832795_350510",
+   "sha256": "545e1d420826b1e5359376cf2ecce2eba6e60aee8b8f6df61e18fcd20d6e0ca8",
+   "split": "test"
+  },
+  {
+   "item_id": "musique_synth:2hop__85463_33311",
+   "sha256": "990d4125d8c237be1d60e5dfbb285eb8973da05bb431ef2d79c13a57b34d9102",
+   "split": "test"
+  },
+  {
+   "item_id": "musique_synth:2hop__88372_83837",
+   "sha256": "f1c132e579134842e6a01b3f2ccdedbb2f14da892e5c47f1251b02ae103d107b",
+   "split": "validation"
+  },
+  {
+   "item_id": "musique_synth:2hop__91667_81007",
+   "sha256": "310f4ce9710bb7b2b337ca3ae6668d3b8baeb4965b11874ebc932ffd5c1f24e5",
+   "split": "test"
+  },
+  {
+   "item_id": "musique_synth:3hop1__136083_87694_64412",
+   "sha256": "2b7e072ad81ee34e413f56b8fd496db84387cba2f7bae35717635a94e551c756",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:3hop1__458916_665330_47686",
+   "sha256": "cbda464eb3bdaf68d975478c1d52fbac0032ecde18f9f0a665c9def5e84a3501",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:3hop1__49610_89752_75165",
+   "sha256": "352ddb695826b88d01ea03df8f4ea5e70d8415ea51f76f9d2b6764f9cc42e23d",
+   "split": "train"
+  },
+  {
+   "item_id": "musique_synth:3hop1__587540_514761_594810",
+   "sha256": "1b2fe1a5ce1f9609152983bdc2ffb36d7f16647d04229346aab0fdbb93d7e395",
+   "split": "validation"
+  },
+  {
+   "item_id": "musique_synth:4hop1__264443_49925_13759_736921",
+   "sha256": "d099fe436e148a6a51c999321dabc6d0f7a9b9125c8c10986b14010d72a25ca1",
+   "split": "validation"
+  },
+  {
+   "item_id": "musique_synth:4hop3__373866_5189_38229_86687",
+   "sha256": "48278d3860b5bc138f74102b54f3a0ad7785560be118540de0b056ad3a3d9191",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1602.03483:0",
+   "sha256": "e398e5514f96757f895475ba7c13af89b224f868c4100f09037e5c9992894cba",
+   "split": "test"
+  },
+  {
+   "item_id": "qasper:1602.03483:1",
+   "sha256": "aec5673cd73da7a1a2e889d4f6196ecad7971d9fb2467bef3e8167f45b3be1ab",
+   "split": "validation"
+  },
+  {
+   "item_id": "qasper:1604.02038:1",
+   "sha256": "26dd853c8375a045755e45ca6c3c114f7f814075905cb172f803353416ed8125",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1610.06510:0",
+   "sha256": "f746f5ed204de76c914c12d17e08b8327b06ea3889d9c5d097f9d8f0ecfc487c",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1706.08568:0",
+   "sha256": "376d304dcd9864b9b584d48b0b2598c2127b356f636be9502304b50cc9d6affd",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1709.04005:1",
+   "sha256": "2e82575d715335947d1b5d518ab9fb8dd63b5664624024db00731c6623c915ad",
+   "split": "validation"
+  },
+  {
+   "item_id": "qasper:1711.03759:0",
+   "sha256": "853c5bfafe682c49a2d45f760b3fc5b2e5a08c0f3df5e648d3f9752c092bdd0e",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1808.07733:0",
+   "sha256": "99804b045a3fd163c04d5cc9b53c0a4fa627ab30ce7933fca2d59efaa5830df5",
+   "split": "validation"
+  },
+  {
+   "item_id": "qasper:1809.08899:1",
+   "sha256": "f609309764abc0910cca33807d7bab8c5410e0f7cd2be26bc9e5991edbe95c8f",
+   "split": "test"
+  },
+  {
+   "item_id": "qasper:1907.00937:1",
+   "sha256": "0cee5831b3b4ca5b010d15f879ccd9f2bcb81fc6c4beadf99fae575c9f53fb20",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1907.10676:1",
+   "sha256": "0df22522698420db42e0faf653c043a761b9b6e87732ee654dd55dc8755cd713",
+   "split": "test"
+  },
+  {
+   "item_id": "qasper:1908.07721:1",
+   "sha256": "c6e6ed2677fb8f44d67293049b3819e342078e124d0816393c7c949cbee9abbc",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1908.10149:0",
+   "sha256": "c466cf6fe76afbf1134390243c9a198751b3f71047b50d94ac80d584090c37eb",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1909.05190:0",
+   "sha256": "d13cd151a9afea49a5e32198d394d184056f0d4d1bacedf86d05614269c8ba64",
+   "split": "test"
+  },
+  {
+   "item_id": "qasper:1909.10481:0",
+   "sha256": "f21bb9db2eae2356d6936550ef5b28dc0d20a451558d00bfb4b9dc8f94afd780",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1909.13466:0",
+   "sha256": "dd6cdae62c0577a60271ae5b0e676cfdd3bd30e97e2df45c902322035959e8c2",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1910.01108:1",
+   "sha256": "cce3cbd362ebcfa5febf239a1647bab2043834c633c25bd173bc3be44395378e",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1910.07154:0",
+   "sha256": "0169aa7c8c5e9e01be535da037f5f8c4047071b8b81902cfff0a507923b928ae",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:1911.00202:0",
+   "sha256": "0231ac4e31f0d5421954fe48a1fb2c4ffdd3ba61414965d0d0bf31de2412d83b",
+   "split": "train"
+  },
+  {
+   "item_id": "qasper:2004.01820:0",
+   "sha256": "2c0c4e796ebd94b64fbc99abb9a2d3bb18d0ec2f46da271eb9f1cac3e4898a6c",
+   "split": "validation"
+  },
+  {
+   "item_id": "scifact:1029:13940200",
+   "sha256": "6bc49fa06cdd57578bdad41ac62ec4ed9dcb4f1bf740d81e36edb0e8ed178e86",
+   "split": "test"
+  },
+  {
+   "item_id": "scifact:1180:31272411",
+   "sha256": "a8a5a02493b9f88e52d740c8101f234ab5ad2c74fffb9f27a9da5aac5e520207",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:1259:24341590",
+   "sha256": "0fbb7c54947a1843286f9e09b11f191e6389952ae5adba3bc64762bbea40dbf3",
+   "split": "test"
+  },
+  {
+   "item_id": "scifact:133:12640810",
+   "sha256": "529cd2e8f272aa67336fe3991d1bd68f32e6f1215da0fb2c846dbc50e98eaed8",
+   "split": "validation"
+  },
+  {
+   "item_id": "scifact:1370:2425364",
+   "sha256": "4a939e639fdcd3bd5c0bcddc9180bbaf84627aebf9c629e9bc63ccf41957825c",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:213:13625993",
+   "sha256": "fd903d1cb38ded40ecef873b59543cc2318258975344c2282dde583d5ec50b9a",
+   "split": "test"
+  },
+  {
+   "item_id": "scifact:300:3553087",
+   "sha256": "acf2b5b1121b9b1be96a00c65778fa2a3234e25a50e6a93aa51eff56757dd845",
+   "split": "test"
+  },
+  {
+   "item_id": "scifact:443:10165258",
+   "sha256": "1544b1987d44d90eb259187053222508ca376cbb417b371c9ac49d6df7e336a2",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:521:34873974",
+   "sha256": "74bc57cfba641afb527f9309a3e8c0b23169ee1f398074249953f0fb8081e6b9",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:527:3863543",
+   "sha256": "1fa4d82036d47c689f8aa965358d95183923dc0e1a3cddc7d302d6e9661e068d",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:535:39368721",
+   "sha256": "834bafb276ac401b93c994cec24c8e61b90d8709127a12736d43bffce9e695e6",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:54:49556906",
+   "sha256": "adaa9a8f8f8b51a7e1c8f802c42bc45f827c6ec8d2a0990ad5898afa09d09f8a",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:693:24088502",
+   "sha256": "c292dd2cbd1aa86be4ca136fe92c05090fc3d040d6030addd57474e98775baf6",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:781:24338780",
+   "sha256": "1598f6c44a3635cdbcceba4c7493e4686ffbe13292b4c46fe8bd35f97865f9e2",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:814:33387953",
+   "sha256": "a6c240a542a0e9742441519b363bdea8fc4e040058e160baff34a3dd67642411",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:830:1897324",
+   "sha256": "3bf946292babdcd42b532138e3e48e3c18368dd184f64bda59fe1858724e11d3",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:847:16787954",
+   "sha256": "3a87379c785ba3828458a3f6ca973fdad9540c2eccef90268e9eedddd7dd6ca4",
+   "split": "train"
+  },
+  {
+   "item_id": "scifact:887:18855191",
+   "sha256": "b8bd59bee13af5f690f860e9852529b9bb5056daebfe0a91af20071142690419",
+   "split": "validation"
+  },
+  {
+   "item_id": "scifact:971:28617573",
+   "sha256": "ebcde47313127026f7ea5a2331abb6cbaaeb21204d341e54b81602d0109edb8d",
+   "split": "validation"
+  },
+  {
+   "item_id": "scifact:975:5304891",
+   "sha256": "26503266fc6599dfc9a5f7dc76abc3ddfc38ed87118835bf264da6215b1af96e",
+   "split": "validation"
+  }
+ ]
+}

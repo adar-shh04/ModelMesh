@@ -697,6 +697,13 @@ def machine() -> dict[str, Any]:
     }
     if sys.platform == "win32":
         import ctypes
+        import winreg
+
+        try:
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0")
+            info["processor_name"] = str(winreg.QueryValueEx(key, "ProcessorNameString")[0]).strip()
+        except OSError:
+            pass
 
         class MemoryStatus(ctypes.Structure):
             _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong)] + [
