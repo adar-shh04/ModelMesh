@@ -339,7 +339,7 @@ These notes are hand-written and appended to the generated report. They contain 
 
 ## What P1 needs
 
-1. The product owner's decision on the OpenRouter credit (D2), so P1's pool has a complete matrix: every pool model observed on every item.
+1. A complete matrix for the P1 pool. D2 was decided on 2026-11-14 (stay on free tiers, `docs/DECISIONS.md`): P1's full set runs on gemini-3.1-flash-lite, both Groq models and both Ollama models, so those five need an outcome on every item, including gpt-oss-20b, which P0 left out of routing for lack of coverage. The OpenRouter models stay on the pilot set and gemini-3.6-flash is dropped, so they belong in a separate, smaller comparison like the one above, not in the routed pool.
 2. The judge pipeline run on the judge task types and on `evidence_synthesis` faithfulness, plus the human calibration and Cohen's kappa gate (ADR-0005, D3). Without it three of eight task types stay unlabelled and synthesis keeps an F1-only label.
 3. **A new split and a frozen test manifest before any model selection.** Nothing chosen here (the family, the hyper-parameters, the 0.6 default floor behaviour, the low-confidence quantile) may be carried over as a P1 result; selection is re-run on P1 validation. The P0 split manifest (`data/manifests/p0_router_split.json`) is for P0 only.
 4. At least 30 validation points per task type for calibration and conformal intervals, and about 100 test prompts for the paraphrase robustness check (which needs provider calls, so a quota budget).
