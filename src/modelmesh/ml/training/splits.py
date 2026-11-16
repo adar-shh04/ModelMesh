@@ -18,9 +18,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 
 from modelmesh.ml.benchmark.items import BenchItem
 from modelmesh.ml.evaluation.metrics import Floats
+from modelmesh.ml.features import embedding_segments, join_embedding_text
 
 NEAR_DUPLICATE_COSINE = 0.95
 SPLITS = ("train", "validation", "test")
@@ -47,13 +49,33 @@ def source_question_key(item: BenchItem) -> str:
     return f"{item.source}:{item.item_id.split(':', 1)[-1]}"
 
 
+def grouping_text(item: BenchItem) -> str:
+    """Text for near-duplicate grouping: system prompt plus final user message, first 4,096 characters (the model
+    reads at most 512 tokens of it). This is the feature-version-1 embedding text. It is kept apart from the
+    router's own, token-capped, embedding so that the split does not move when the feature spec changes."""
+    return join_embedding_text(*embedding_segments(item.messages, max_chars=None))[:4096]
+
+
 def normalise(embeddings: Floats) -> Floats:
     norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
     return embeddings / np.maximum(norms, 1e-12)
 
 
-def build_groups(items: Sequence[BenchItem], embeddings: Floats, threshold: float = NEAR_DUPLICATE_COSINE) -> list[int]:
-    """A group id per item (the smallest member index)."""
+def build_groups(
+    items: Sequence[BenchItem],
+    embeddings: Floats,
+    threshold: float = NEAR_DUPLICATE_COSINE,
+    *,
+    extra_embeddings: Sequence[Floats] = (),
+    required_similarity: Floats | None = None,
+) -> list[int]:
+    """A group id per item (the smallest member index).
+
+    ``extra_embeddings`` are further embeddings of the same items (for example the router's own feature text):
+    a pair above the threshold in any of them is grouped too, so the split is leak-free in every space.
+    ``required_similarity`` (items x items) must also exceed the threshold for a pair to count as a
+    near-duplicate, for example the similarity of the response formats the items require.
+    """
     uf = _UnionFind(len(items))
     by_key: dict[str, int] = {}
     for i, item in enumerate(items):
@@ -62,11 +84,27 @@ def build_groups(items: Sequence[BenchItem], embeddings: Floats, threshold: floa
             uf.union(by_key[key], i)
         else:
             by_key[key] = i
-    unit = normalise(embeddings)
-    similar = np.argwhere(np.triu(unit @ unit.T, k=1) > threshold)
-    for a, b in similar:
+    for a, b in np.argwhere(near_duplicates(embeddings, threshold, extra_embeddings, required_similarity)):
         uf.union(int(a), int(b))
     return [uf.find(i) for i in range(len(items))]
+
+
+def near_duplicates(
+    embeddings: Floats,
+    threshold: float = NEAR_DUPLICATE_COSINE,
+    extra_embeddings: Sequence[Floats] = (),
+    required_similarity: Floats | None = None,
+) -> npt.NDArray[np.bool_]:
+    """Upper-triangular mask of near-duplicate pairs (see ``build_groups``)."""
+    mask: npt.NDArray[np.bool_] | None = None
+    for space in (embeddings, *extra_embeddings):
+        unit = normalise(space)
+        above = np.triu(unit @ unit.T, k=1) > threshold
+        mask = above if mask is None else mask | above
+    assert mask is not None
+    if required_similarity is not None:
+        mask &= required_similarity > threshold
+    return mask
 
 
 def grouped_split(
@@ -75,8 +113,13 @@ def grouped_split(
     *,
     seed: int,
     fractions: tuple[float, float, float] = (0.6, 0.2, 0.2),
+    largest_first: bool = False,
 ) -> list[str]:
-    """Assigns whole groups to train/validation/test, stratified by the (task_type, source) of each group."""
+    """Assigns whole groups to train/validation/test, stratified by the (task_type, source) of each group.
+
+    Groups are taken in a seeded random order. With ``largest_first`` they are then stably sorted by size,
+    largest first (ties stay in random order), so a big group cannot arrive late and overshoot a split.
+    """
     members: dict[int, list[int]] = defaultdict(list)
     for i, group in enumerate(groups):
         members[group].append(i)
@@ -89,6 +132,8 @@ def grouped_split(
     for stratum in sorted(strata):
         stratum_groups = strata[stratum]
         rng.shuffle(stratum_groups)
+        if largest_first:
+            stratum_groups.sort(key=lambda g: -len(members[g]))
         total = sum(len(members[g]) for g in stratum_groups)
         targets = [f * total for f in fractions]
         counts = [0.0, 0.0, 0.0]
@@ -128,6 +173,13 @@ def leakage(assignment: Sequence[str], groups: Sequence[int], embeddings: Floats
             if ia.size and ib.size:
                 worst = max(worst, float((unit[ia] @ unit[ib].T).max()))
     return LeakageReport(crossing, worst)
+
+
+def max_cross_split(assignment: Sequence[str], similarity: Floats) -> float:
+    """The highest value of an items x items similarity between two items in different splits."""
+    labels = np.array(assignment)
+    cross = labels[:, None] != labels[None, :]
+    return float(similarity[cross].max()) if cross.any() else -1.0
 
 
 def assert_no_leakage(assignment: Sequence[str], groups: Sequence[int], embeddings: Floats) -> LeakageReport:

@@ -21,6 +21,8 @@ from modelmesh.ml.features import embedding_segments
 DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
 # Offline batches run on one thread: they are not latency-bound and should not crowd the machine.
 OFFLINE_THREADS = 1
+# Texts per model call. Small batches keep peak memory low (attention memory grows with batch x length^2).
+OFFLINE_BATCH = 4
 
 Messages = Sequence[Mapping[str, Any]]
 
@@ -58,9 +60,11 @@ class CachedEmbedder:
         keys = [self._key(t) for t in texts]
         missing = [(k, t) for k, t in zip(keys, texts, strict=True) if k not in self._cache]
         if missing:
-            vectors = self._embedder.embed_many_sync([t for _, t in missing])
-            for (key, _), vector in zip(missing, vectors, strict=True):
-                self._cache[key] = np.asarray(vector, dtype=np.float64)
+            for start in range(0, len(missing), OFFLINE_BATCH):
+                chunk = missing[start : start + OFFLINE_BATCH]
+                vectors = self._embedder.embed_many_sync([t for _, t in chunk])
+                for (key, _), vector in zip(chunk, vectors, strict=True):
+                    self._cache[key] = np.asarray(vector, dtype=np.float64)
             self.cache_path.parent.mkdir(parents=True, exist_ok=True)
             np.savez(self.cache_path, **self._cache)  # type: ignore[arg-type]
         return np.vstack([self._cache[k] for k in keys])

@@ -48,9 +48,7 @@ from modelmesh.ml.features import (
     EMBEDDING_MAX_TOKENS,
     FEATURE_NAMES,
     FEATURE_VERSION,
-    embedding_segments,
     feature_vector,
-    join_embedding_text,
     request_features,
 )
 from modelmesh.ml.training.candidates import (
@@ -73,6 +71,7 @@ from modelmesh.ml.training.splits import (
     assert_no_leakage,
     build_groups,
     grouped_split,
+    grouping_text,
     normalise,
     split_manifest,
 )
@@ -132,13 +131,6 @@ class Variant:
 
 def chars_of(item: BenchItem) -> int:
     return sum(len(m.get("content") or "") for m in item.messages)
-
-
-def grouping_text(item: BenchItem) -> str:
-    """Text for near-duplicate grouping: system prompt plus final user message, first 4,096 characters (the model
-    reads at most 512 tokens of it). This is the feature-version-1 embedding text. It is kept apart from the
-    router's own, token-capped, embedding so that the split does not move when the feature spec changes."""
-    return join_embedding_text(*embedding_segments(item.messages, max_chars=None))[:4096]
 
 
 def make_table(matrix: LabelMatrix, embedder: CachedEmbedder) -> Table:

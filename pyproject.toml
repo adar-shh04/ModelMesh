@@ -75,6 +75,7 @@ ignore = ["S101"]
 "migrations/**" = ["E501"]
 "src/modelmesh/cli.py" = ["T20"]
 "src/modelmesh/ml/benchmark/__main__.py" = ["T20"]
+"src/modelmesh/ml/p1/__main__.py" = ["T20"]
 # Load-test tools print their results, and the Locust files draw random workload mixes (not security-relevant).
 "loadtests/**" = ["T20", "S311"]
 # Offline experiments: seeded pseudo-random splits and perturbations are intended.
@@ -133,7 +134,7 @@ type = "forbidden"
 source_modules = ["modelmesh.api", "modelmesh.pipeline", "modelmesh.routing", "modelmesh.auth", "modelmesh.policy", "modelmesh.cache", "modelmesh.reliability", "modelmesh.providers", "modelmesh.accounting"]
 # ADR-0001: routing may use ml.features and ml.artifacts (pure Python and numpy); nothing online imports the
 # offline packages or the libraries they need.
-forbidden_modules = ["modelmesh.ml.training", "modelmesh.ml.evaluation", "modelmesh.ml.benchmark", "modelmesh.ml.cache_calibration", "sklearn", "mlflow", "datasets", "lightgbm", "scipy"]
+forbidden_modules = ["modelmesh.ml.training", "modelmesh.ml.evaluation", "modelmesh.ml.benchmark", "modelmesh.ml.cache_calibration", "modelmesh.ml.p1", "sklearn", "mlflow", "datasets", "lightgbm", "scipy"]
 
 [[tool.importlinter.contracts]]
 name = "The runtime router artifact code stays free of training code and heavy ML libraries"
