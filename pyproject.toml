@@ -81,6 +81,7 @@ ignore = ["S101"]
 # Offline experiments: seeded pseudo-random splits and perturbations are intended.
 "src/modelmesh/ml/training/**" = ["S311"]
 "src/modelmesh/ml/evaluation/**" = ["S311"]
+"src/modelmesh/ml/p1/**" = ["S311"]
 # Report template: long prose lines are kept whole so the generated Markdown reads as written.
 "src/modelmesh/ml/evaluation/report.py" = ["S311", "E501"]
 

@@ -1,7 +1,9 @@
 """Human confirmation of labels (ADR-0005, DECISIONS D3).
 
-An LLM or automatic pre-label is shown and the reviewer confirms or corrects it. On a random subset the pre-label
-is hidden, so that anchoring can be measured. Model identity is never shown.
+An LLM or automatic pre-label can be shown and the reviewer confirms or corrects it. The pre-label is **hidden by
+default**: Mezvuat's labelling (2026-11-14) found that a shown pre-label anchors the reviewer heavily. It is shown on
+a random ``SHOWN_FRACTION`` of rows only, so that the anchoring can still be measured (D3). Model identity is never
+shown.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ from modelmesh.ml.benchmark.items import BenchItem
 from modelmesh.ml.benchmark.metrics import cohen_kappa
 from modelmesh.ml.benchmark.scoring import combined_acceptance, needs_judge, score_automatic
 
-HIDDEN_FRACTION = 0.3
+SHOWN_FRACTION = 0.3
 JUDGE_SAMPLE = 150
 AUTO_SAMPLE = 50
 
@@ -30,6 +32,7 @@ def build_review_set(
     seed: int,
     judge_sample: int = JUDGE_SAMPLE,
     auto_sample: int = AUTO_SAMPLE,
+    shown_fraction: float = SHOWN_FRACTION,
 ) -> list[dict[str, Any]]:
     """A stratified sample of outputs with their pre-labels, ready for the review page."""
     rng = random.Random(seed)  # noqa: S311 - sampling, not security
@@ -69,7 +72,7 @@ def build_review_set(
                 "reference": item.reference.get("gold") or item.reference.get("golds") or item.reference.get("label"),
                 "output": observation["output"],
                 "prelabel": prelabel,
-                "prelabel_shown": rng.random() >= HIDDEN_FRACTION,
+                "prelabel_shown": rng.random() < shown_fraction,
             }
         )
     return review

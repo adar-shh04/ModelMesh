@@ -497,6 +497,18 @@ def test_review_set_is_stratified_blind_and_includes_hidden_prelabels() -> None:
     assert not any(row["output"] is None for row in review)
 
 
+def test_review_set_hides_prelabels_by_default() -> None:
+    items = [numeric_item(f"n{i}") for i in range(200)]
+    observations = [{"item_id": i.item_id, "model": "m", "ok": True, "output": "2"} for i in items]
+    review = build_review_set(items, observations, [], seed=3, judge_sample=0, auto_sample=200)
+    shown = sum(row["prelabel_shown"] for row in review)
+    assert 0 < shown < len(review) / 2  # a minority is shown, to measure anchoring; the rest are hidden
+    assert not any(
+        row["prelabel_shown"]
+        for row in build_review_set(items, observations, [], seed=3, auto_sample=50, shown_fraction=0.0)
+    )
+
+
 def test_review_page_escapes_output_and_hides_model() -> None:
     row = review_fixture()[0] | {
         "output": "<script>alert(1)</script>",
