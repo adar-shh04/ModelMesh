@@ -17,7 +17,7 @@ param(
 $ErrorActionPreference = "Stop"
 $known = @("gemini", "groq", "openrouter", "ollama")
 # A comma-separated string or a PowerShell array both arrive here; normalise to a list of lane names.
-$selected = @($Lanes -split "," | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
+$selected = @($Lanes -split "[,\s]+" | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
 $unknown = @($selected | Where-Object { $known -notcontains $_ })
 if ($unknown.Count -gt 0) { throw "Unknown lane(s): $($unknown -join ', '). Known lanes: $($known -join ', ')." }
 if ($selected.Count -eq 0) { throw "Select at least one lane." }
@@ -30,7 +30,7 @@ $allModels = @(
     "openrouter/nvidia/nemotron-3.5-super-vl:free", "openrouter/liquid/lfm-3-1.7b:free",
     "ollama/qwen3:4b", "ollama/llama3.2:3b"
 )
-$excluded = @($Exclude -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+$excluded = @($Exclude -split "[,\s]+" | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $unknownModels = @($excluded | Where-Object { $allModels -notcontains $_ })
 if ($unknownModels.Count -gt 0) { throw "Unknown model(s) in -Exclude: $($unknownModels -join ', ')." }
 $models = @($allModels | Where-Object {
