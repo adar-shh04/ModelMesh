@@ -177,6 +177,9 @@ async def test_openai_sdk_non_streaming(api: Api) -> None:
     assert result.choices[0].message.content == "echo: from sdk"
     assert result.usage is not None
     assert result.usage.total_tokens > 0
+    # The integration guide tells SDK users to read the extension object this way.
+    assert result.model_extra is not None
+    assert result.model_extra["modelmesh"]["request_id"].startswith("mmr_")
 
 
 async def test_openai_sdk_streaming_without_usage(api: Api) -> None:
