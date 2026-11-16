@@ -53,7 +53,7 @@ These notes are hand-written and appended to the generated report. The only numb
 
 ## What was not verified
 
-- **Integration tests did not run.** Docker Desktop was stopped, so every test that needs Postgres or the test Redis failed to connect (203 errors or failures, 1 pure test passed in `tests/integration`). That includes the new `tests/integration/test_router_admin.py` (register, shadow mode leaves traffic unchanged and logs a decision, promotion needs a shadow period, approval and a passing non-preliminary report) and the round trip of migration `0002_router_models`.
+- **Integration tests did not run on 2026-11-15.** They have since passed, on 2026-11-16 with feature version 2 (`tests/integration/test_router_admin.py` included), against the test Redis and `modelmesh_test`. On 2026-11-15 Docker Desktop was stopped, so every test that needs Postgres or the test Redis failed to connect (203 errors or failures, 1 pure test passed in `tests/integration`). That includes the new `tests/integration/test_router_admin.py` (register, shadow mode leaves traffic unchanged and logs a decision, promotion needs a shadow period, approval and a passing non-preliminary report) and the round trip of migration `0002_router_models`.
 - The shadow and active paths in `pipeline/chat.py` are covered by unit tests of their parts (`tests/unit/test_router_lifecycle.py`, `tests/unit/test_router_training.py`), not by a request through the running stack.
 - The admin API document was regenerated from the code; no external OpenAPI linter was run.
 - MLflow runs were written to the local SQLite store; the MLflow UI was not opened.

@@ -1,0 +1,17 @@
+# A second, throwaway ModelMesh stack for load tests, next to (never instead of) any other running stack.
+#
+#   docker build -t modelmesh-api:load .
+#   docker compose -p mmload --env-file .env.load -f docker-compose.yml -f loadtests/compose.load.yml up -d --no-build
+#
+# `-p mmload` gives it its own containers, network and Postgres volume. The image gets its own tag, so building it
+# never changes the image another stack would be recreated from. Ports come from .env.load (see loadtests/README.md).
+services:
+  migrate:
+    image: modelmesh-api:load
+  api:
+    image: modelmesh-api:load
+    environment:
+      MODELMESH_ENV: development
+      MODELMESH_ENABLE_FAKE_PROVIDER: "true"
+      MODELMESH_FAKE_PROVIDER_DELAY_MS: ${MODELMESH_FAKE_PROVIDER_DELAY_MS:-0}
+      MODELMESH_FAKE_PROVIDER_FAILURE_RATE: ${MODELMESH_FAKE_PROVIDER_FAILURE_RATE:-0}

@@ -484,3 +484,27 @@ async def test_reasoning_truncation_returns_empty_length_answer(client, factory,
     respx.post(url).mock(return_value=httpx.Response(200, json=body))
     result = await factory(client).chat(make_request(), deadline=deadline())
     assert (result.content, result.finish_reason) == ("", "length")
+
+
+# --------------------------------------------------------------------------- fake provider (load tests)
+async def test_fake_failure_injection_hits_every_fake_model_at_about_the_configured_rate() -> None:
+    from modelmesh.providers.fake import FakeAdapter
+
+    adapter = FakeAdapter(failure_rate=0.3)
+    failures = 0
+    for i in range(1000):
+        request = NormalizedChatRequest(provider_model="echo-small", messages=[{"role": "user", "content": f"q{i}"}])
+        try:
+            await adapter.chat(request, deadline=Deadline.in_ms(1000))
+        except ProviderError as exc:
+            assert exc.error_class is ErrorClass.UPSTREAM_UNAVAILABLE and exc.http_status == 503
+            failures += 1
+    assert 250 <= failures <= 350
+    healthy = FakeAdapter()
+    ok = await healthy.chat(
+        NormalizedChatRequest(provider_model="echo-small", messages=[{"role": "user", "content": "hi"}]),
+        deadline=Deadline.in_ms(1000),
+    )
+    assert ok.content == "echo: hi"
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        FakeAdapter(failure_rate=1.5)

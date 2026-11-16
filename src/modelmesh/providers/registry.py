@@ -58,5 +58,7 @@ def build_adapters(settings: Settings) -> dict[str, ProviderAdapter]:
     if settings.ollama_base_url:
         adapters["ollama"] = OllamaAdapter(client(), settings.ollama_base_url)
     if settings.enable_fake_provider:
-        adapters["fake"] = FakeAdapter()
+        adapters["fake"] = FakeAdapter(
+            delay_s=settings.fake_provider_delay_ms / 1000, failure_rate=settings.fake_provider_failure_rate
+        )
     return adapters

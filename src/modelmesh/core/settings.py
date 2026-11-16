@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     fastembed_cache_path: str | None = Field(None, alias="FASTEMBED_CACHE_PATH")
     content_retention_ttl_days: int = Field(7, alias="MODELMESH_CONTENT_RETENTION_TTL_DAYS")
     enable_fake_provider: bool = Field(False, alias="MODELMESH_ENABLE_FAKE_PROVIDER")
+    # Load tests only: a fixed upstream delay and an injected 503 rate for every fake model.
+    fake_provider_delay_ms: int = Field(0, alias="MODELMESH_FAKE_PROVIDER_DELAY_MS", ge=0)
+    fake_provider_failure_rate: float = Field(0.0, alias="MODELMESH_FAKE_PROVIDER_FAILURE_RATE", ge=0.0, le=1.0)
 
     default_key_rpm: int = Field(20, alias="MODELMESH_DEFAULT_KEY_RPM")
     default_key_tpm: int = Field(50_000, alias="MODELMESH_DEFAULT_KEY_TPM")

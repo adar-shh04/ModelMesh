@@ -75,6 +75,8 @@ ignore = ["S101"]
 "migrations/**" = ["E501"]
 "src/modelmesh/cli.py" = ["T20"]
 "src/modelmesh/ml/benchmark/__main__.py" = ["T20"]
+# Load-test tools print their results, and the Locust files draw random workload mixes (not security-relevant).
+"loadtests/**" = ["T20", "S311"]
 # Offline experiments: seeded pseudo-random splits and perturbations are intended.
 "src/modelmesh/ml/training/**" = ["S311"]
 "src/modelmesh/ml/evaluation/**" = ["S311"]

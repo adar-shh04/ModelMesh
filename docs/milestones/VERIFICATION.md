@@ -119,7 +119,30 @@ Recorded 2026-11-15. Offline only: no provider was called. Full report: `M6_P0_P
 
 Not verified: every Postgres/Redis integration test (Docker stopped), including `test_router_admin.py` and migration `0002_router_models`; the shadow path through a running gateway; the MLflow UI.
 
+## M8: docs and load-test scenarios (load tests not run)
+
+Recorded 2026-11-16, while the P1 benchmark was running on the Compose gateway (which was not touched).
+
+| Deliverable | Result |
+|---|---|
+| Integration guide (`docs/INTEGRATION_GUIDE.md`) | Written. An SDK integration test now checks the `model_extra["modelmesh"]` access it shows |
+| README quickstart from a fresh clone | Written. The **timed fresh-clone test was not run**: it needs a stack built and started from nothing |
+| Locust scenarios (`loadtests/`): fake overhead, chaos at 30% injected failures, small real-provider run | Written. **Not run as load tests** (`M8_LOAD_REPORT.md`). Smoke run: 2 x 5 s against an in-process API on port 8201 with the fake provider only. The real-provider scenario was only loaded |
+| Fake provider fault injection (`MODELMESH_FAKE_PROVIDER_FAILURE_RATE`, `MODELMESH_FAKE_PROVIDER_DELAY_MS`) | Unit-tested: a 30% rate gave 250 to 350 failures in 1,000 calls |
+| Combined test with Mezvuat | Not started (needs Mezvuat's client and both stacks at once) |
+
 ## Latest gate results
+
+2026-11-16, after the feature-version-2 embedding fix and the M8 work, with the test Redis (56390) and `modelmesh_test`:
+
+| Gate | Result |
+|---|---|
+| ruff check and format (now including `loadtests/`) | Clean |
+| mypy --strict | Clean |
+| import-linter | 4 contracts kept |
+| pytest, full suite | 592 passed, 24 skipped. All 24 skips are live-provider tests, which did **not** run |
+
+Earlier:
 
 2026-11-15, after M6, with Docker Desktop stopped:
 

@@ -53,16 +53,24 @@ def _text_of(message: dict[str, Any]) -> str:
 class FakeAdapter:
     provider_id: ClassVar[str] = "fake"
 
-    def __init__(self, *, seed: int = 7, delay_s: float = 0.0, flaky_rate: float = 0.3) -> None:
+    def __init__(
+        self, *, seed: int = 7, delay_s: float = 0.0, flaky_rate: float = 0.3, failure_rate: float = 0.0
+    ) -> None:
+        """``failure_rate`` injects 503s into every fake model (chaos load tests); ``flaky`` keeps its own rate."""
+        if not 0.0 <= failure_rate <= 1.0 or not 0.0 <= flaky_rate <= 1.0:
+            raise ValueError("failure rates must be between 0 and 1")
         self._rng = random.Random(seed)  # noqa: S311 - not security sensitive
         self._delay_s = delay_s
         self._flaky_rate = flaky_rate
+        self._failure_rate = failure_rate
 
     def _maybe_fail(self, req: NormalizedChatRequest) -> None:
         if "unavailable" in req.provider_model:
             raise ProviderError(ErrorClass.UPSTREAM_UNAVAILABLE, "fake unavailable", http_status=503)
         if "flaky" in req.provider_model and self._rng.random() < self._flaky_rate:
             raise ProviderError(ErrorClass.UPSTREAM_UNAVAILABLE, "fake flaky failure", http_status=503)
+        if self._failure_rate and self._rng.random() < self._failure_rate:
+            raise ProviderError(ErrorClass.UPSTREAM_UNAVAILABLE, "fake injected failure", http_status=503)
 
     def _answer(self, req: NormalizedChatRequest) -> str:
         fmt = req.response_format

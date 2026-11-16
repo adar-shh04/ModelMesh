@@ -31,7 +31,7 @@ jobs:
       - run: uv python install 3.13
       - run: uv sync --frozen --group ml
       - name: Lint and format
-        run: uv run ruff check src tests migrations && uv run ruff format --check src tests migrations
+        run: uv run ruff check src tests migrations loadtests && uv run ruff format --check src tests migrations loadtests
       - name: Type check
         run: uv run mypy
       - name: Module boundaries
