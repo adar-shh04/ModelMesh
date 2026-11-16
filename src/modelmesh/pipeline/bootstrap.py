@@ -28,7 +28,9 @@ from modelmesh.routing.learned import RouterRuntime
 
 def build_cache(settings: Settings, redis: Redis) -> ResponseCache:
     embedder = (
-        FastEmbedEmbedder(settings.embedding_model, cache_dir=settings.fastembed_cache_path)
+        FastEmbedEmbedder(
+            settings.embedding_model, cache_dir=settings.fastembed_cache_path, threads=settings.embedding_threads
+        )
         if settings.semantic_cache_enabled
         else None
     )
@@ -85,6 +87,8 @@ def build_services(
         telemetry=built_telemetry,
         # The embedding model loads on first use, so this costs nothing until a learned router is installed.
         router_runtime=RouterRuntime(
-            embedder=FastEmbedEmbedder(settings.embedding_model, cache_dir=settings.fastembed_cache_path)
+            embedder=FastEmbedEmbedder(
+                settings.embedding_model, cache_dir=settings.fastembed_cache_path, threads=settings.embedding_threads
+            )
         ),
     )

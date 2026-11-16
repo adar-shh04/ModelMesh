@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     model_catalog_path: Path = Field(Path("config/models.yaml"), alias="MODELMESH_MODEL_CATALOG_PATH")
     pricing_path: Path = Field(Path("config/pricing.yaml"), alias="MODELMESH_PRICING_PATH")
     embedding_model: str = Field("BAAI/bge-small-en-v1.5", alias="MODELMESH_EMBEDDING_MODEL")
+    # ONNX threads per embedding call; unset means min(4, CPU count).
+    embedding_threads: int | None = Field(None, alias="MODELMESH_EMBEDDING_THREADS", ge=1)
     cache_default_ttl_s: int = Field(3600, alias="MODELMESH_CACHE_DEFAULT_TTL_S")
     cache_max_ttl_s: int = Field(86_400, alias="MODELMESH_CACHE_MAX_TTL_S")
     semantic_cache_enabled: bool = Field(True, alias="MODELMESH_SEMANTIC_CACHE_ENABLED")

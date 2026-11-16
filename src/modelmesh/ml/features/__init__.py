@@ -2,7 +2,12 @@
 
 Pure Python on purpose: this runs on the request path, so it may not pull in numpy-heavy or offline code.
 The embedding itself is computed by the caller (fastembed bge-small, ADR-0006); this module only decides
-which text is embedded.
+which text is embedded and how many tokens of it.
+
+Feature version 2 caps the embedded text at ``EMBEDDING_MAX_TOKENS`` tokens (version 1 embedded up to the
+model's 512-token limit, which made the router miss its 25 ms latency budget on long prompts). The cap is
+split between the system prompt and the final user message by ``embedding_token_budget`` so that a long
+system prompt cannot crowd the user's message out of the embedding.
 """
 
 from __future__ import annotations
@@ -12,9 +17,16 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-FEATURE_VERSION = "1"
+FEATURE_VERSION = "2"
 CHARS_PER_TOKEN = 0.25
-EMBEDDING_MAX_CHARS = 4096
+# Embedded text: at most this many tokens, counting the model's [CLS] and [SEP].
+EMBEDDING_MAX_TOKENS = 128
+EMBEDDING_SPECIAL_TOKENS = 2
+# The system prompt keeps at least this many tokens when the user message would otherwise fill the budget.
+EMBEDDING_SYSTEM_TOKENS = 32
+# Each segment is cut to this many characters before tokenising, which bounds the tokeniser's work. At 16
+# characters per token it never binds on natural text; when it does, it binds identically online and offline.
+EMBEDDING_SEGMENT_MAX_CHARS = 16 * EMBEDDING_MAX_TOKENS
 
 TASK_TYPES = (
     "query_classification",
@@ -147,8 +159,32 @@ def feature_vector(features: Mapping[str, float]) -> list[float]:
     return [float(features.get(name, 0.0)) for name in FEATURE_NAMES]
 
 
+def embedding_segments(
+    messages: Sequence[Mapping[str, Any]], *, max_chars: int | None = EMBEDDING_SEGMENT_MAX_CHARS
+) -> tuple[str, str]:
+    """(system prompt, final user message): the two texts the router embeds (ADR-0004), each pre-cut."""
+    system = "\n".join(_text(m) for m in messages if m.get("role") in ("system", "developer")).strip()
+    final_user = next((_text(m) for m in reversed(messages) if m.get("role") == "user"), "").strip()
+    if max_chars is None:
+        return system, final_user
+    return system[:max_chars], final_user[:max_chars]
+
+
+def embedding_token_budget(system_tokens: int, user_tokens: int) -> tuple[int, int]:
+    """How many leading tokens of the system prompt and of the final user message are embedded.
+
+    The user message gets everything the system prompt does not need, and the system prompt keeps at least
+    ``EMBEDDING_SYSTEM_TOKENS`` (or all of itself, if shorter) when the user message is long.
+    """
+    content = EMBEDDING_MAX_TOKENS - EMBEDDING_SPECIAL_TOKENS
+    system_take = min(system_tokens, max(EMBEDDING_SYSTEM_TOKENS, content - user_tokens))
+    return system_take, min(user_tokens, content - system_take)
+
+
+def join_embedding_text(system: str, user: str) -> str:
+    return f"{system}\n{user}".strip()
+
+
 def embedding_text(messages: Sequence[Mapping[str, Any]]) -> str:
-    """System prompt plus final user message, as ADR-0004 specifies. The embedder truncates to 512 tokens."""
-    system = "\n".join(_text(m) for m in messages if m.get("role") in ("system", "developer"))
-    final_user = next((_text(m) for m in reversed(messages) if m.get("role") == "user"), "")
-    return f"{system}\n{final_user}".strip()[:EMBEDDING_MAX_CHARS]
+    """System prompt plus final user message, before the token cap. The embedder applies the cap."""
+    return join_embedding_text(*embedding_segments(messages))

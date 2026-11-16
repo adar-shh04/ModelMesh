@@ -6,5 +6,7 @@ a file whose sha256 no longer matches the registered value.
 
 | File | Version | Algorithm | sha256 | Source | Status |
 |---|---|---|---|---|---|
-| `router-p0-primary-logreg.json` | `p0-primary-logreg` | logistic regression per model | `960b804165ac2c2f9179f92acff6d79e1f03bfd6c9822765b35bf69cf03b9c0d` | `python -m modelmesh.ml.evaluation.p0` on P0 pilot data | Preliminary. Fails the ADR-0004 criterion and the ECE gate; must not be promoted |
-| `router-p0-with_f1_only_synthesis-logreg.json` | `p0-with_f1_only_synthesis-logreg` | logistic regression per model | `bba7979172d2fdb22cfc3ff513a79e6578d8482b1ce2ecfed1f061d25220daec` | sensitivity variant | Preliminary; analysis only |
+| `router-p0-primary-knn.json` | `p0-primary-knn` | kNN | `da1a0816c701f631c356a092bdb520e456ee40ded03445502e8063553e24e5cc` | `python -m modelmesh.ml.evaluation.p0` on P0 pilot data, feature version 2 (2026-11-16) | Preliminary. Fails the ADR-0004 criterion and the ECE gate; must not be promoted |
+| `router-p0-with_f1_only_synthesis-knn.json` | `p0-with_f1_only_synthesis-knn` | kNN | `8137a714995015d1073e284dd8e75f94eedf263f78f5687f4c4a8a913d2f18ee` | sensitivity variant, feature version 2 | Preliminary; analysis only |
+
+Superseded (feature version 1, 2026-11-15; the gateway refuses to load them): `router-p0-primary-logreg.feature-v1.json` (`960b8041…`) and `router-p0-with_f1_only_synthesis-logreg.feature-v1.json` (`bba79791…`).

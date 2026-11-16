@@ -170,3 +170,15 @@ Implementation choices made in M6. They apply to P1 unless the P1 plan changes t
 - **Isotonic regression** is a numpy pool-adjacent-violators implementation, tested equal to scikit-learn's. LightGBM is served from its `dump_model` trees by a numpy evaluator, tested equal to LightGBM's predictions. The runtime needs neither library.
 - **MLflow** uses a local SQLite store on X:, because MLflow 3.18's file store refuses to start without an override.
 - **P0 result:** the primary criterion does not pass (`docs/milestones/M6_P0_PRELIMINARY_REPORT.md`). P0 selection must not be reused on P1.
+
+## Amendment 2026-11-16 (router embedding latency, feature version 2)
+
+The P0 run measured a router p95 of 411.9 ms including embedding, against the 25 ms budget. The embedding feature is changed as follows (`FEATURE_VERSION = "2"` in `modelmesh.ml.features`; artifacts of version 1 no longer load):
+
+- **Embedded text.** It is still the system prompt plus the final user message, but at most **128 bge-small tokens**, counting [CLS] and [SEP]. Version 1 used the model's 512-token limit.
+  - The budget is split by `embedding_token_budget`. The user message gets whatever the system prompt does not use, and the system prompt keeps at least 32 tokens when the user message is long. So a long system prompt cannot push the user message out of the embedding.
+  - Each segment is cut at a token boundary using the model's own tokenizer.
+- **One code path online and offline.** Training embeds through the gateway's `FastEmbedEmbedder.request_text`. Version 1 had a skew: the gateway cut texts at 2,048 characters before embedding, while training embedded up to 4,096. That changed the embedded window for 34 of the 280 pilot items.
+- **Threads and reuse.** The gateway's embedder runs on `min(4, CPU count)` ONNX threads (`MODELMESH_EMBEDDING_THREADS`) and keeps a 1,024-entry LRU keyed by the SHA-256 of the embedded text. Neither changes the feature.
+- **Near-duplicate grouping for splits** still uses the version-1 text (512 tokens), so the split does not move when the feature spec changes.
+- P0 was re-run under version 2 (`docs/milestones/M6_P0_PRELIMINARY_REPORT.md`). As before, nothing selected on P0 carries over to P1.

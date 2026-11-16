@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from modelmesh.ml.artifacts import Prediction, RouterArtifact
-from modelmesh.ml.features import embedding_text, request_features
+from modelmesh.ml.features import embedding_segments, request_features
 from modelmesh.routing.estimates import CandidateEstimate, QualityEstimate
 from modelmesh.routing.solver import SolveInput, solve
 
@@ -40,8 +40,9 @@ def routing_features(
     }
 
 
-def text_to_embed(messages: Sequence[Mapping[str, Any]]) -> str:
-    return embedding_text(messages)
+def segments_to_embed(messages: Sequence[Mapping[str, Any]]) -> tuple[str, str]:
+    """(system prompt, final user message); the embedder applies the feature spec's token budget."""
+    return embedding_segments(messages)
 
 
 class LearnedQualityPredictor:
@@ -141,7 +142,7 @@ def shadow_decision(
 
 
 class TextEmbedder(Protocol):
-    async def embed(self, text: str) -> list[float]: ...
+    async def embed_request(self, system: str, user: str) -> list[float]: ...
 
 
 @dataclass
@@ -170,7 +171,7 @@ class RouterRuntime:
     ) -> dict[str, Any] | None:
         if self.embedder is None:
             return None
-        embedding = await self.embedder.embed(text_to_embed(messages))
+        embedding = await self.embedder.embed_request(*segments_to_embed(messages))
         return routing_features(
             messages,
             task_type=task_type,

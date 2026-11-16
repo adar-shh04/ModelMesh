@@ -44,7 +44,15 @@ from modelmesh.ml.evaluation.metrics import (
     route_cost_optimized,
     upper_hull,
 )
-from modelmesh.ml.features import FEATURE_NAMES, embedding_text, feature_vector, request_features
+from modelmesh.ml.features import (
+    EMBEDDING_MAX_TOKENS,
+    FEATURE_NAMES,
+    FEATURE_VERSION,
+    embedding_segments,
+    feature_vector,
+    join_embedding_text,
+    request_features,
+)
 from modelmesh.ml.training.candidates import (
     Candidate,
     ModelInfo,
@@ -59,6 +67,7 @@ from modelmesh.ml.training.candidates import (
     raw_matrix,
 )
 from modelmesh.ml.training.dataset import LabelMatrix, build_matrix, file_sha256, load_pilot
+from modelmesh.ml.training.embedding import DEFAULT_MODEL as DEFAULT_EMBEDDING_MODEL
 from modelmesh.ml.training.embedding import CachedEmbedder
 from modelmesh.ml.training.splits import (
     assert_no_leakage,
@@ -125,6 +134,13 @@ def chars_of(item: BenchItem) -> int:
     return sum(len(m.get("content") or "") for m in item.messages)
 
 
+def grouping_text(item: BenchItem) -> str:
+    """Text for near-duplicate grouping: system prompt plus final user message, first 4,096 characters (the model
+    reads at most 512 tokens of it). This is the feature-version-1 embedding text. It is kept apart from the
+    router's own, token-capped, embedding so that the split does not move when the feature spec changes."""
+    return join_embedding_text(*embedding_segments(item.messages, max_chars=None))[:4096]
+
+
 def make_table(matrix: LabelMatrix, embedder: CachedEmbedder) -> Table:
     features = np.array(
         [
@@ -139,7 +155,7 @@ def make_table(matrix: LabelMatrix, embedder: CachedEmbedder) -> Table:
             for item in matrix.items
         ]
     )
-    unit = normalise(embedder.embed([embedding_text(item.messages) for item in matrix.items]))
+    unit = normalise(embedder.embed_requests([item.messages for item in matrix.items]))
     return Table(
         matrix.item_ids(),
         [item.task_type for item in matrix.items],
@@ -593,7 +609,7 @@ def robustness(
             for i in perturbed
         ]
     )
-    unit = normalise(embedder.embed([embedding_text(i.messages) for i in perturbed]))
+    unit = normalise(embedder.embed_requests([i.messages for i in perturbed]))
     noisy = Table(test.item_ids, test.tasks, features, unit, np.array([chars_of(i) for i in perturbed], dtype=float),
                   test.acc, test.cost, test.latency, test.prompt_tokens, test.completion_tokens)  # fmt: skip
     artifact = RouterArtifact(trained.doc)
@@ -621,10 +637,15 @@ def robustness(
 
 
 def overhead(artifact_path: Path, test_items: list[BenchItem], embedder: CachedEmbedder) -> dict[str, Any]:
-    """Router p50/p95 on the online path: features, artifact prediction, Estimator and policy solver."""
+    """Router p50/p95 on the online path: features, artifact prediction, Estimator and policy solver.
+
+    "Including embedding" uses the gateway's own embedder class with the gateway's default thread count and its
+    LRU disabled, so every call runs the model, as for a prompt the gateway has not seen before.
+    """
+    from modelmesh.cache.embeddings import FastEmbedEmbedder
     from modelmesh.observability.stats import ProviderStats
     from modelmesh.routing.estimates import Estimator, TokenEstimator
-    from modelmesh.routing.learned import LearnedQualityPredictor, routing_features, text_to_embed
+    from modelmesh.routing.learned import LearnedQualityPredictor, routing_features, segments_to_embed
     from modelmesh.routing.solver import SolveInput, solve
 
     catalog = load_catalog(ROOT / "config" / "models.yaml")
@@ -632,6 +653,7 @@ def overhead(artifact_path: Path, test_items: list[BenchItem], embedder: CachedE
     predictor = LearnedQualityPredictor(RouterArtifact.load(artifact_path))
     estimator = Estimator(pricing, ProviderStats(), TokenEstimator(), predictor)
     pool = [catalog.models[m] for m in POOL]
+    online = FastEmbedEmbedder(DEFAULT_EMBEDDING_MODEL, cache_dir=os.environ.get("FASTEMBED_CACHE_PATH"), cache_size=0)
 
     def route(item: BenchItem, embedding: Sequence[float]) -> str:
         features = routing_features(
@@ -651,19 +673,19 @@ def overhead(artifact_path: Path, test_items: list[BenchItem], embedder: CachedE
         )  # fmt: skip
         return solved.ranked[0].model.id
 
-    embeddings = [embedder.embed([text_to_embed(i.messages)])[0].tolist() for i in test_items]
+    embeddings = [row.tolist() for row in embedder.embed_requests([i.messages for i in test_items])]
     for item, emb in zip(test_items[:5], embeddings, strict=False):  # warm-up
         route(item, emb)
-        embedder.embed_one_uncached(text_to_embed(item.messages))
+        online.embed_request_sync(*segments_to_embed(item.messages))
     without, with_embedding, lengths = [], [], []
     for _ in range(5):
         for item, emb in zip(test_items, embeddings, strict=True):
-            lengths.append(len(text_to_embed(item.messages)))
+            lengths.append(chars_of(item))  # prompt length before any cut, so buckets compare across versions
             start = time.perf_counter()
             route(item, emb)
             without.append((time.perf_counter() - start) * 1000)
             start = time.perf_counter()
-            fresh = embedder.embed_one_uncached(text_to_embed(item.messages)).tolist()
+            fresh = online.embed_request_sync(*segments_to_embed(item.messages))
             route(item, fresh)
             with_embedding.append((time.perf_counter() - start) * 1000)
     return {
@@ -683,7 +705,8 @@ def overhead(artifact_path: Path, test_items: list[BenchItem], embedder: CachedE
             if mask.any()
         },
         "targets_ms": {"excluding_embedding_p95": 10, "including_embedding_p95": 25},
-        "embedding": "fastembed BAAI/bge-small-en-v1.5 (ONNX, CPU, threads=1), as the gateway uses it",
+        "embedding": f"fastembed {DEFAULT_EMBEDDING_MODEL} (ONNX, CPU, threads={online.threads}, first "
+        f"{EMBEDDING_MAX_TOKENS} tokens, feature version {FEATURE_VERSION}), as the gateway uses it",
         "machine": machine(),
     }
 
@@ -859,7 +882,7 @@ def run_variant(
     # Groups and the split are always built over the widest variant, so every variant shares one split.
     wide = build_matrix(items, list(observations), POOL, include_f1_only=True)
     wide = wide.restrict(wide.complete_rows())
-    wide_unit = normalise(embedder.embed([embedding_text(i.messages) for i in wide.items]))
+    wide_unit = normalise(embedder.embed([grouping_text(i) for i in wide.items]))
     wide_groups = build_groups(wide.items, wide_unit)
     wide_split = grouped_split(wide.items, wide_groups, seed=SEED)
     leak = assert_no_leakage(wide_split, wide_groups, wide_unit)
@@ -970,7 +993,9 @@ def criterion(primary: Mapping[str, Any]) -> dict[str, Any]:
 def main() -> None:
     os.environ.setdefault("FASTEMBED_CACHE_PATH", str(ROOT / ".cache" / "fastembed"))
     items_path = PILOT / "items.jsonl"
-    observations_path = PILOT / RUN / "observations.jsonl"
+    # The run directory is still being appended to by later benchmark lanes. To reproduce a report, point this at
+    # a read-only snapshot whose sha256 matches the one the report records (see M6_P0_NOTES.md).
+    observations_path = Path(os.environ.get("MODELMESH_P0_OBSERVATIONS") or PILOT / RUN / "observations.jsonl")
     items, observations, dataset_sha = load_pilot(
         items_path, observations_path, ROOT / "data" / "manifests" / "pilot.json"
     )
@@ -989,6 +1014,7 @@ def main() -> None:
         "run": RUN,
         "observations_sha256": file_sha256(observations_path),
         "dataset_manifest_sha256": dataset_sha,
+        "feature_version": FEATURE_VERSION,
         "seed": SEED,
         "bootstrap_resamples": RESAMPLES,
         "thresholds": THRESHOLDS,

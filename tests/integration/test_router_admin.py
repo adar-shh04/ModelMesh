@@ -18,7 +18,7 @@ AUTO = {"model": "auto", "routing": {"policy": "cost_optimized"}}
 
 
 class StubEmbedder:
-    async def embed(self, text: str) -> list[float]:
+    async def embed_request(self, system: str, user: str) -> list[float]:
         return [0.0, 1.0]
 
 
