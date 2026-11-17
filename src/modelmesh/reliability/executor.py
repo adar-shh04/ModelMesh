@@ -126,7 +126,12 @@ class Executor:
         if ceiling is not None and candidate.upper_bound_cost_usd + state.failed_attempts_cost_usd > ceiling:
             state.warnings.append(f"fallback_skipped_cost:{model.id}")
             return False
-        if not self._breakers.for_provider(model.provider).allow() or not self._breakers.for_model(model.id).allow():
+        provider_breaker = self._breakers.for_provider(model.provider)
+        provider_allowed = provider_breaker.allow()
+        if not provider_allowed or not self._breakers.for_model(model.id).allow():
+            if provider_allowed:
+                # The provider breaker may have handed out its half-open probe; no request is sent, so return it.
+                provider_breaker.release_probe()
             state.attempts.append(
                 AttemptRecord(
                     model.provider,
@@ -168,6 +173,9 @@ class Executor:
             connection_level = error.http_status is None
             if connection_level:
                 self._breakers.for_provider(model.provider).record_failure(timeout=timed_out)
+            else:
+                # An HTTP response is no verdict on the provider's connection breaker; free its probe.
+                self._breakers.for_provider(model.provider).release_probe()
         else:
             self._breakers.for_model(model.id).release_probe()
             self._breakers.for_provider(model.provider).release_probe()
@@ -327,6 +335,7 @@ class Executor:
                 state.attempts_elapsed_ms += latency_ms
                 state.failed_attempts_cost_usd += candidate.input_cost_estimate_usd
                 self._breakers.for_model(candidate.model.id).release_probe()
+                self._breakers.for_provider(candidate.model.provider).release_probe()
                 if repaired:
                     break
                 repaired = True
@@ -472,6 +481,7 @@ class Executor:
             self._breakers.for_provider(model.provider).release_probe()
         else:
             self._breakers.for_model(model.id).record_failure()
+            self._breakers.for_provider(model.provider).release_probe()
         if outcome != "client_cancelled":
             self._stats.record(
                 model.provider,

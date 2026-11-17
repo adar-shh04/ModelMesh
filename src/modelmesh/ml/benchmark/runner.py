@@ -8,6 +8,10 @@ Two kinds of failure are kept apart:
   non-capacity errors. They are reliability data and are never retried away.
 - *Deferrals* are capacity signals (429 from ModelMesh's own limits, 503 when upstream quota is exhausted). They are
   logged, the pair stays pending for a later run, and a provider lane stops after repeated deferrals.
+
+An upstream authentication error is neither: it says our own provider key is wrong or expired, not how the model
+behaves. It is logged as a deferral, the pair stays pending, and the lane stops at once (reason `auth_error`) until
+the key is fixed. Before 2026-11-17 such errors were recorded as observations; see P1_PREREGISTRATION.md.
 """
 
 from __future__ import annotations
@@ -137,6 +141,21 @@ def retry_delay(response: httpx.Response, attempt: int) -> float:
     return min(15.0 * 2.0**attempt, MAX_BACKOFF_S)
 
 
+def attempt_outcomes(response: httpx.Response) -> list[str]:
+    with contextlib.suppress(ValueError, AttributeError):
+        attempts = (response.json().get("error", {}).get("details") or {}).get("attempts", [])
+        return [str(a.get("outcome")) for a in attempts if isinstance(a, dict)]
+    return []
+
+
+def is_auth_failure(response: httpx.Response) -> bool:
+    """Every upstream attempt was refused for authentication: our provider key, not model behaviour."""
+    if response.status_code == 200:
+        return False
+    outcomes = attempt_outcomes(response)
+    return bool(outcomes) and "auth_error" in outcomes
+
+
 def error_code_of(response: httpx.Response) -> str | None:
     try:
         body = response.json()
@@ -229,6 +248,10 @@ class BenchmarkRunner:
         if lane.consecutive_deferrals >= DEFERRALS_BEFORE_STOP:
             lane.stopped_reason = lane.stopped_reason or "capacity"
 
+    def _stop_for_auth(self, lane: Lane, item_id: str, model: str, response: httpx.Response, kind: str) -> None:
+        self._defer(lane, item_id, model, response, kind)
+        lane.stopped_reason = "auth_error"
+
     # ------------------------------------------------------------ generation
     def _request_body(self, item: BenchItem, model: str, lane: Lane) -> dict[str, Any]:
         routing: dict[str, Any] = {"fallback": "none"}
@@ -286,6 +309,9 @@ class BenchmarkRunner:
             return
         if response.status_code in CAPACITY_STATUS or response.status_code == 402:
             self._defer(lane, item.item_id, model, response, "generation")
+            return
+        if is_auth_failure(response):
+            self._stop_for_auth(lane, item.item_id, model, response, "generation")
             return
         lane.consecutive_deferrals = 0
         observation = self._to_observation(item, model, response)
@@ -420,6 +446,9 @@ class BenchmarkRunner:
             return
         if response.status_code in CAPACITY_STATUS or response.status_code == 402:
             self._defer(lane, item.item_id, row["model"], response, "judge")
+            return
+        if is_auth_failure(response):
+            self._stop_for_auth(lane, item.item_id, row["model"], response, "judge")
             return
         lane.consecutive_deferrals = 0
         score: int | None = None

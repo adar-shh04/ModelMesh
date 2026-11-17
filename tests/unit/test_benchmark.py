@@ -601,6 +601,31 @@ async def test_capacity_responses_are_deferred_not_recorded(tmp_path: Path) -> N
 
 
 @pytest.mark.anyio
+async def test_auth_errors_stop_the_lane_and_are_not_recorded(tmp_path: Path) -> None:
+    """Regression (2026-11-17): an expired Groq key wrote 240 failed rows that then counted as done."""
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        error = {"code": "all_attempts_failed", "details": {"attempts": [{"outcome": "auth_error"}]}}
+        return httpx.Response(502, json={"error": error})
+
+    runner, http, _ = paced_runner(handler, tmp_path)
+    items = [numeric_item(name) for name in "abc"]
+    await runner.collect(items, ["m/x"])
+    assert calls == 1
+    assert runner.observations.read() == []
+    assert runner.lanes["m"].stopped_reason == "auth_error"
+    assert [row["item_id"] for row in runner.deferrals.read()] == ["a"]
+    resumed, http2, _ = paced_runner(lambda r: completion("2"), tmp_path)
+    await resumed.collect(items, ["m/x"])
+    assert sorted(row["item_id"] for row in resumed.observations.read()) == list("abc")
+    await http.aclose()
+    await http2.aclose()
+
+
+@pytest.mark.anyio
 async def test_real_failures_are_recorded_once_without_client_retry(tmp_path: Path) -> None:
     calls = 0
 

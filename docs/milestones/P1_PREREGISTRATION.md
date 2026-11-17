@@ -150,3 +150,10 @@ None of these can turn a failed criterion into a pass: the criterion is read fro
   - n per task type.
 - The report states their smaller coverage next to every number, as D2 requires, and makes no claim about how they would route on the full set.
 - If the owner later buys credit or enables billing (D2), these models can be added to a later version of the analysis without changing this split. That version is reported as a separate router version.
+
+## Amendment, 2026-11-17: collection incidents (no acceptance or router metric was looked at)
+
+Two collection faults were found from `p1 status`-level data only (failure codes and attempt outcomes).
+
+1. **Expired Groq key.** From 2026-11-16T21:07Z, after the gateway restarted, Groq rejected the benchmark's provider key (`expired_api_key`). The runner recorded 240 rows (120 per Groq model) whose only upstream outcome was `auth_error`. They measure our key, not the models. From this date the runner treats an attempt refused for authentication as a deferral and stops the lane (`auth_error`), so the cell stays pending. **Open, owner's decision:** whether the 240 recorded rows are moved to a quarantine file and re-collected with a new key, or kept as failures under the Labels rule above.
+2. **Wedged circuit breaker.** A half-open provider breaker could hand out its single probe and never get it back when the model breaker was still open, which blocked every Ollama model with `circuit_open` until a restart. These were 503 deferrals, so no rows were recorded and no data is affected. Fixed in the gateway (the probe is returned, and an unanswered probe expires after 330 s). Collection only lost time.

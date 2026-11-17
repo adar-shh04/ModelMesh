@@ -20,6 +20,7 @@ class CircuitBreaker:
         failure_threshold: float = 0.5,
         open_seconds: float = 30.0,
         consecutive_timeouts: int = 3,
+        probe_expiry_seconds: float = 330.0,
     ) -> None:
         self._clock = clock
         self._outcomes: deque[bool] = deque(maxlen=window)
@@ -30,6 +31,11 @@ class CircuitBreaker:
         self._consecutive_timeouts = 0
         self._opened_at: float | None = None
         self._probe_in_flight = False
+        self._probe_started: float | None = None
+        # No request outlives the 300 s maximum deadline, so a probe still in flight after this is abandoned (a code
+        # path that took the probe and never reported a verdict). Without the expiry such a leak would wedge the
+        # breaker in half-open until the process restarts.
+        self._probe_expiry_seconds = probe_expiry_seconds
 
     @property
     def state(self) -> CircuitState:
@@ -43,21 +49,27 @@ class CircuitBreaker:
         state = self.state
         if state == "closed":
             return True
-        if state == "half_open" and not self._probe_in_flight:
+        if state != "half_open":
+            return False
+        now = self._clock()
+        abandoned = self._probe_started is not None and now - self._probe_started >= self._probe_expiry_seconds
+        if not self._probe_in_flight or abandoned:
             self._probe_in_flight = True
+            self._probe_started = now
             return True
         return False
 
     def release_probe(self) -> None:
         """A probe that ended without a verdict (e.g. a client cancel) must not wedge the breaker."""
         self._probe_in_flight = False
+        self._probe_started = None
 
     def record_success(self) -> None:
         self._outcomes.append(True)
         self._consecutive_timeouts = 0
         if self._opened_at is not None:
             self._opened_at = None
-            self._probe_in_flight = False
+            self.release_probe()
             self._outcomes.clear()
 
     def record_failure(self, *, timeout: bool = False) -> None:
@@ -73,7 +85,7 @@ class CircuitBreaker:
 
     def trip(self) -> None:
         self._opened_at = self._clock()
-        self._probe_in_flight = False
+        self.release_probe()
 
 
 class BreakerRegistry:

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import random
+from types import SimpleNamespace
 
 import pytest
 
 from modelmesh.core.errors import DECISIONS, ErrorClass
-from modelmesh.reliability.breaker import CircuitBreaker
+from modelmesh.reliability.breaker import BreakerRegistry, CircuitBreaker
 from modelmesh.reliability.executor import BACKOFF_CAP_S, Executor
 from modelmesh.reliability.structured import is_portable_schema, schema_property_count, validate_output
 
@@ -84,6 +85,44 @@ def test_breaker_probe_can_be_released_without_a_verdict() -> None:
     assert breaker.allow()
     breaker.release_probe()
     assert breaker.allow()
+
+
+def test_breaker_abandoned_probe_expires() -> None:
+    clock = Clock()
+    breaker = CircuitBreaker(clock=clock, open_seconds=30, probe_expiry_seconds=330)
+    breaker.trip()
+    clock.now += 30
+    assert breaker.allow()
+    clock.now += 329
+    assert not breaker.allow()
+    clock.now += 1
+    assert breaker.allow()  # the first probe never reported back; a new one may go
+    breaker.record_success()
+    assert breaker.state == "closed"
+
+
+def _admit(executor: Executor, model: SimpleNamespace) -> bool:
+    candidate = SimpleNamespace(model=model, upper_bound_cost_usd=0.0)
+    state = SimpleNamespace(max_cost_usd=None, failed_attempts_cost_usd=0.0, attempts=[], warnings=[])
+    return executor._admit(candidate, state)  # type: ignore[arg-type]
+
+
+def test_admit_returns_the_provider_probe_when_the_model_breaker_is_open() -> None:
+    """Regression (2026-11-17): the provider probe leaked here and wedged every Ollama model until a restart."""
+    clock = Clock()
+    breakers = BreakerRegistry(clock=clock)
+    executor = Executor.__new__(Executor)
+    executor._breakers = breakers
+    model = SimpleNamespace(id="p/m", provider="p")
+    breakers.for_provider("p").trip()
+    clock.now += 10
+    breakers.for_model("p/m").trip()  # opened later, so still open when the provider turns half-open
+    clock.now += 25
+    assert breakers.for_provider("p").state == "half_open"
+    assert breakers.for_model("p/m").state == "open"
+    assert not _admit(executor, model)
+    clock.now += 10  # the model breaker is now half-open too
+    assert _admit(executor, model)  # the provider probe is still available, so the request can go
 
 
 @pytest.mark.parametrize(

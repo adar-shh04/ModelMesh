@@ -15,7 +15,9 @@ param(
     [Parameter(Mandatory = $true)][ValidateSet("cloud", "local")][string]$Group,
     [int]$WaitMinutes = 120,
     [int]$MaxCycles = 250,
-    [int]$IdleLimit = 0
+    [int]$IdleLimit = 0,
+    # Cloud lanes for the full run. Drop one (e.g. -CloudLanes gemini) while its provider key is being replaced.
+    [string]$CloudLanes = "gemini,groq"
 )
 $ErrorActionPreference = "Stop"
 Set-Location (Split-Path $PSScriptRoot -Parent)
@@ -42,7 +44,7 @@ for ($cycle = 1; $cycle -le $MaxCycles; $cycle++) {
     $stamp = (Get-Date).ToUniversalTime().ToString("o")
     Add-Content "$runDir/loop.log" "$stamp cycle $cycle start, observations $before"
     if ($Group -eq "cloud") {
-        & .\scripts\pilot.ps1 -Profile full -RunId full-2026-11-16 -Lanes gemini,groq -Exclude gemini/gemini-3.6-flash *>> "$runDir/run.console.log"
+        & .\scripts\pilot.ps1 -Profile full -RunId full-2026-11-16 -Lanes $CloudLanes -Exclude gemini/gemini-3.6-flash *>> "$runDir/run.console.log"
         # OpenRouter's two :free models stay on the pilot set (D2); its daily cap is 50 requests.
         & .\scripts\pilot.ps1 -Lanes openrouter *>> "data/benchmark/pilot/pilot-2026-11-11/run.openrouter.console.log"
     } else {
